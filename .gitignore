@@ -1,0 +1,5 @@
+.todo.todo
+.air.toml
+.env
+tmp
+data.db

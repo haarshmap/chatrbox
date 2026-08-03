@@ -1,0 +1,20 @@
+services:
+  app:
+    build: 
+        context: .
+        dockerfile: Dockerfile.dev
+    ports:
+      - "${PORT}:8080"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_started
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  
