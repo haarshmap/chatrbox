@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,20 +16,96 @@ import (
 
 var db *bun.DB
 
-func registerHandler(w http.ResponseWriter, r *http.Request) {
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	templ, err := template.ParseFiles("templates/index.tmpl")
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to parse index.tmpl")
+	}
+
+	data := PageData{
+		Title: "Testing",
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err = templ.Execute(w, data)
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to execute index.tmpl")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func RegisterHandlerPage(w http.ResponseWriter, r *http.Request) {
+	templ, err := template.ParseFiles("templates/register.tmpl")
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to parse register.tmpl")
+	}
+
+	data := PageData{
+		Title: "Testing",
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err = templ.Execute(w, data)
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to execute register.tmpl")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func LoginHandlerPage(w http.ResponseWriter, r *http.Request) {
+	templ, err := template.ParseFiles("templates/login.tmpl")
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to parse login.tmpl")
+	}
+
+	data := PageData{
+		Title: "Testing",
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err = templ.Execute(w, data)
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to execute login.tmpl")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func DashboardHandlerPage(w http.ResponseWriter, r *http.Request) {
+	templ, err := template.ParseFiles("templates/dashboard.tmpl")
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to parse dashboard.tmpl")
+		fmt.Fprintf(w, "%v", err)
+
+	}
+
+	data := PageData{
+		Title: "Testing",
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err = templ.Execute(w, data)
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to execute login.tmpl")
+		fmt.Fprintf(w, "%v", err)
+	}
+}
+
+func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
-	w.Write([]byte("currently at register"))
+
 	name := r.FormValue("username")
 	password := r.FormValue("password")
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Log(r.Context(), 8, "failed to hash password", err)
+		slog.Log(r.Context(), 8, "failed to hash password")
+		fmt.Fprintf(w, "failed to hash password: %v", err)
 	}
 	user := &Users{Username: name, Password: string(hash)}
 	_, err = db.NewInsert().Model(user).Exec(ctx)
 	if err != nil {
-		slog.Log(r.Context(), 0, "failed to initialise row", err)
+		slog.Log(r.Context(), 0, "failed to initialise row")
+		fmt.Fprintf(w, "failed to initialise row: %v", err)
 	}
 }
 

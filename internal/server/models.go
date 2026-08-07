@@ -12,3 +12,7 @@ type Claims struct {
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
+
+type PageData struct {
+	Title string
+}

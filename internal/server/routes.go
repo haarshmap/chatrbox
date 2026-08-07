@@ -5,9 +5,14 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var RegisterRoutes = func(r chi.Router, db *bun.DB) {
+var RegisterRoutes = func(r chi.Router, database *bun.DB) {
+	db = database
+	r.Get("/", IndexHandler)
+	r.Get("/register", RegisterHandlerPage)
+	r.Get("/login", LoginHandlerPage)
+	r.Get("/dashboard", DashboardHandlerPage)
 
-	r.Post("/register", registerHandler)
+	r.Post("/register", RegisterHandler)
 	r.Post("/login", LoginHandler)
 	r.Post("/logout", LogoutHandler)
 
