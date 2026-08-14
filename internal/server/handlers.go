@@ -10,11 +10,20 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/websocket"
 	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var db *bun.DB
+var (
+	db       *bun.DB
+	h        *Hub
+	Upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+)
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	templ, err := template.ParseFiles("templates/index.tmpl")
@@ -136,8 +145,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Log(r.Context(), 8, "failed to sign the key")
 	}
 
-	slog.Log(r.Context(), 0, tokenString)
-
 	cookie := http.Cookie{
 		Name:     "sessionToken",
 		Value:    tokenString,
@@ -148,9 +155,21 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &cookie)
-	fmt.Println("Cookie set:")
-	fmt.Printf("%+v\n", cookie)
-	fmt.Println("Set-Cookie header:", w.Header().Values("Set-Cookie"))
+}
+
+func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := Upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to upgrade")
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	client := &Client{Hub: h, conn: conn, send: make(chan []byte, 256)}
+	client.Hub.register <- client
+
+	go client.WritePump()
+	go client.ReadPump()
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -165,13 +184,6 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, &cookie)
 
-	fmt.Println("Cookie set:")
-	fmt.Printf("%+v\n", cookie)
 	slog.Log(r.Context(), 0, "User logged out")
-	slog.Log(r.Context(), 0, cookie.Value)
-}
 
-func DashboardHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Log(r.Context(), 0, "currently at dashboard")
-	fmt.Printf("at dashboard")
 }

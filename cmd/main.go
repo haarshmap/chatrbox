@@ -35,7 +35,10 @@ func main() {
 		fmt.Println("SQLite database initialized successfully with Bun!")
 	}
 
-	server.RegisterRoutes(r, db)
+	Hub := server.NewHub()
+	go Hub.Run()
+
+	server.RegisterRoutes(Hub, r, db)
 
 	http.ListenAndServe(":"+os.Getenv("PORT"), r)
 }

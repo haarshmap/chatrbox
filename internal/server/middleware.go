@@ -13,12 +13,8 @@ func CheckCookieAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		cookie, err := r.Cookie("sessionToken")
-		fmt.Println("Cookie:", cookie)
-		fmt.Println("Error:", err)
-
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
+			fmt.Fprintf(w, "%v", err)
 		}
 
 		tokenString := cookie.Value
@@ -28,15 +24,10 @@ func CheckCookieAuth(next http.Handler) http.Handler {
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 			return []byte(os.Getenv("SIGNING_KEY")), nil
 		})
-		slog.Log(r.Context(), 8, "unauthorized")
-		fmt.Fprintf(w, "Unauthorized %v", err)
-
 		if err != nil || !token.Valid {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			slog.Log(r.Context(), 8, "unauthorized")
 			fmt.Fprintf(w, "Unauthorized %v", err)
-
-			return
 		}
 
 		next.ServeHTTP(w, r)

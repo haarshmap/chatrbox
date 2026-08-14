@@ -13,6 +13,87 @@
     <h1>Dashboard</h1>
     <br>
     <p>Currently just slop i suppose</p>
+    <br>
+    <div id="log"></div>
+    <form id="form" class="form">
+        <input type="submit" value="Send" />
+        <input type="text" id="msg" size="64" autofocus />
+    </form>
+    <br>
+    <br>
+    <form id="formlogout">
+        <button class="button-primary" id="logout">Logout</button>
+    </form>
+    <br>
+
+    <script>
+        const logouturl = "/logout"
+        const formlogout = document.querySelector("#formlogout")
+
+        formlogout.addEventListener("submit", async (e) => {
+            e.preventDefault()
+            const response = await fetch(logouturl, {
+                method: "POST",
+            });
+            console.log(response.status);
+            console.log(response.headers.get("content-type"));
+
+            if (!response.ok) {
+                throw new Error(`response status: ${response.status}`)
+            }
+
+            const result = await response.text();
+            window.location.href = "/";
+            console.log(result);
+        })
+
+        window.onload = function () {
+            var conn;
+            var msg = document.getElementById("msg");
+            var log = document.getElementById("log");
+
+            function appendLog(item) {
+                var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+                log.appendChild(item);
+                if (doScroll) {
+                    log.scrollTop = log.scrollHeight - log.clientHeight;
+                }
+            }
+
+            document.getElementById("form").onsubmit = function () {
+                if (!conn) {
+                    return false;
+                }
+                if (!msg.value) {
+                    return false;
+                }
+                conn.send(msg.value);
+                msg.value = "";
+                return false;
+            };
+
+            if (window["WebSocket"]) {
+                conn = new WebSocket("ws://" + document.location.host + "/ws");
+                conn.onclose = function (evt) {
+                    var item = document.createElement("div");
+                    item.innerHTML = "<b>Connection closed.</b>";
+                    appendLog(item);
+                };
+                conn.onmessage = function (evt) {
+                    var messages = evt.data.split('\n');
+                    for (var i = 0; i < messages.length; i++) {
+                        var item = document.createElement("div");
+                        item.innerText = messages[i];
+                        appendLog(item);
+                    }
+                };
+            } else {
+                var item = document.createElement("div");
+                item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+                appendLog(item);
+            }
+        };
+    </script>
 </body>
 
 </html>

@@ -5,12 +5,13 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var RegisterRoutes = func(r chi.Router, database *bun.DB) {
+var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB) {
 	db = database
+	h = hub
+
 	r.Get("/", IndexHandler)
 	r.Get("/register", RegisterHandlerPage)
 	r.Get("/login", LoginHandlerPage)
-	r.Get("/dashboard", DashboardHandlerPage)
 
 	r.Post("/register", RegisterHandler)
 	r.Post("/login", LoginHandler)
@@ -18,6 +19,7 @@ var RegisterRoutes = func(r chi.Router, database *bun.DB) {
 
 	r.Group(func(r chi.Router) {
 		r.Use(CheckCookieAuth)
-		r.Post("/dashboard", DashboardHandler)
+		r.Get("/dashboard", DashboardHandlerPage)
+		r.Get("/ws", WebSocketHandler)
 	})
 }
