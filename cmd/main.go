@@ -28,6 +28,8 @@ func main() {
 	db := bun.NewDB(sqlite, sqlitedialect.New())
 
 	_, err = db.NewCreateTable().Model((*server.Users)(nil)).IfNotExists().Exec(ctx)
+	_, err = db.NewCreateTable().Model((*server.Rooms)(nil)).IfNotExists().Exec(ctx)
+	_, err = db.NewCreateTable().Model((*server.RoomMembers)(nil)).IfNotExists().Exec(ctx)
 
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Database ping failed: %v", err)

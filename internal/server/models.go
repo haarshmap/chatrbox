@@ -6,9 +6,22 @@ import (
 )
 
 type Users struct {
-	ID       int64  `json:"username" bun:"id,pk,autoincrement"`
+	ID       int64  `bun:"id,pk,autoincrement"`
 	Username string `bun:"username,unique,notnull"`
 	Password string `bun:"password,notnull"`
+	Is_Admin bool   `bun:"is_admin,notnull,default:false"`
+}
+
+type Rooms struct {
+	RoomID   int64  `bun:"roomid,pk,autoincrement"`
+	RoomCode string `bun:"room_code,unique,notnull" json:"roomcode"`
+}
+
+type RoomMembers struct {
+	RoomID int64  `bun:"room_id,pk"`
+	UserID int64  `bun:"user_id,pk"`
+	Room   *Rooms `bun:"rel:belongs-to,join:room_id=roomid"`
+	Users  *Users `bun:"rel:belongs-to,join:user_id=id"`
 }
 
 type Claims struct {

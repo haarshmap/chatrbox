@@ -12,14 +12,16 @@
 <body>
     <h1>Dashboard</h1>
     <br>
-    <p>Currently just slop i suppose</p>
-    <br>
-    <div id="log"></div>
-    <form id="form" class="form">
-        <input type="submit" value="Send" />
-        <input type="text" id="msg" size="64" autofocus />
+    <form class="form" id="formCreate">
+        <button id="create" class="button-primary">Create a room</button>
+        <br>
     </form>
     <br>
+    <form class="form" id="formJoin">
+        <label for="join" class="form-label">To Join</label>
+        <input type="text" name="join" id="join" class="form-input" autocomplete="off">
+        <button id="join" class="button-primary">Join</button>
+    </form>
     <br>
     <form id="formlogout">
         <button class="button-primary" id="logout">Logout</button>
@@ -27,6 +29,15 @@
     <br>
 
     <script>
+        const formJoin = document.querySelector("#formJoin")
+        const formCreate = document.querySelector("#formCreate")
+
+        const create = document.querySelector("#create")
+        const join = document.querySelector("#join")
+
+        const createUrl = "http://localhost:8080/create"
+        const roomUrl = "/room/"
+
         const logouturl = "/logout"
         const formlogout = document.querySelector("#formlogout")
 
@@ -47,52 +58,38 @@
             console.log(result);
         })
 
-        window.onload = function () {
-            var conn;
-            var msg = document.getElementById("msg");
-            var log = document.getElementById("log");
+        formJoin.addEventListener("submit", (e) => {
+            e.preventDefault();
+            formJoinData = new FormData(formJoin);
 
-            function appendLog(item) {
-                var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
-                log.appendChild(item);
-                if (doScroll) {
-                    log.scrollTop = log.scrollHeight - log.clientHeight;
+            const code = formJoinData.get("join")
+            console.log(code)
+            window.location.href = roomUrl + code;
+        })
+
+        formCreate.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch(createUrl, {
+                    method: "POST",
+                });
+                console.log(response.status);
+                console.log(response.headers.get("content-type"));
+
+                if (!response.ok) {
+                    throw new Error(`response status: ${response.status}`)
                 }
+
+                const result = await response.json();
+                console.log(result)
+
+                window.location.href = roomUrl + result
+
             }
-
-            document.getElementById("form").onsubmit = function () {
-                if (!conn) {
-                    return false;
-                }
-                if (!msg.value) {
-                    return false;
-                }
-                conn.send(msg.value);
-                msg.value = "";
-                return false;
-            };
-
-            if (window["WebSocket"]) {
-                conn = new WebSocket("ws://" + document.location.host + "/ws");
-                conn.onclose = function (evt) {
-                    var item = document.createElement("div");
-                    item.innerHTML = "<b>Connection closed.</b>";
-                    appendLog(item);
-                };
-                conn.onmessage = function (evt) {
-                    var messages = evt.data.split('\n');
-                    for (var i = 0; i < messages.length; i++) {
-                        var item = document.createElement("div");
-                        item.innerText = messages[i];
-                        appendLog(item);
-                    }
-                };
-            } else {
-                var item = document.createElement("div");
-                item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
-                appendLog(item);
+            catch (error) {
+                console.log(error)
             }
-        };
+        })
     </script>
 </body>
 

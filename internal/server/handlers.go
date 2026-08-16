@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -25,10 +27,14 @@ var (
 	}
 )
 
+var ctx = context.Background()
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	templ, err := template.ParseFiles("templates/index.tmpl")
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse index.tmpl")
+		fmt.Fprintf(w, "%v", err)
+
 	}
 
 	data := PageData{
@@ -47,6 +53,8 @@ func RegisterHandlerPage(w http.ResponseWriter, r *http.Request) {
 	templ, err := template.ParseFiles("templates/register.tmpl")
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse register.tmpl")
+		fmt.Fprintf(w, "%v", err)
+
 	}
 
 	data := PageData{
@@ -65,6 +73,8 @@ func LoginHandlerPage(w http.ResponseWriter, r *http.Request) {
 	templ, err := template.ParseFiles("templates/login.tmpl")
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse login.tmpl")
+		fmt.Fprintf(w, "%v", err)
+
 	}
 
 	data := PageData{
@@ -84,7 +94,25 @@ func DashboardHandlerPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse dashboard.tmpl")
 		fmt.Fprintf(w, "%v", err)
+	}
 
+	data := PageData{
+		Title: "Testing",
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err = templ.Execute(w, data)
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to execute index.tmpl")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
+	templ, err := template.ParseFiles("templates/room.tmpl")
+	if err != nil {
+		slog.Log(r.Context(), 8, "Failed to parse room.tmpl")
+		fmt.Fprintf(w, "%v", err)
 	}
 
 	data := PageData{
@@ -120,7 +148,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
-	ctx := context.Background()
 
 	name := r.FormValue("username")
 	password := r.FormValue("password")
@@ -185,5 +212,31 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &cookie)
 
 	slog.Log(r.Context(), 0, "User logged out")
+
+}
+
+var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func GenerateShortCode(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(b)
+}
+
+func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
+	Code := GenerateShortCode(6)
+
+	room := &Rooms{RoomCode: Code}
+	_, err := db.NewInsert().Model(room).Exec(ctx)
+	if err != nil {
+		fmt.Fprintf(w, "%v", err)
+		slog.Log(r.Context(), 8, "Failed to create a room")
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(room.RoomCode)
 
 }
