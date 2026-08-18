@@ -22,7 +22,7 @@ func CheckCookieAuth(next http.Handler) http.Handler {
 		claims := &Claims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
-			return []byte(os.Getenv("SIGNING_KEY")), nil
+			return []byte(os.Getenv("SECRET_KEY")), nil
 		})
 		if err != nil || !token.Valid {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)

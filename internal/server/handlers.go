@@ -158,9 +158,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if passcheck != nil {
 		slog.Log(r.Context(), 8, "Password invalid")
 		fmt.Fprintln(w, "\nInvalid password")
+		return
 	}
 
-	secret := []byte(os.Getenv("SIGNING_KEY"))
+	secret := []byte(os.Getenv("SECRET_KEY"))
 
 	claims := &Claims{
 		Username: name,
@@ -227,13 +228,41 @@ func GenerateShortCode(n int) string {
 
 func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	Code := GenerateShortCode(6)
+	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
+	var err error
+
+	cookie, err := r.Cookie("sessionToken")
+	if err != nil {
+		fmt.Fprintf(w, "%v", err)
+		slog.Log(r.Context(), 8, "No Cookie found")
+		return
+	}
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (any, error) {
+		if t.Method != jwt.SigningMethodHS256 {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		slog.Log(r.Context(), 8, "err is not nil")
+		fmt.Printf("%v", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user := &Users{Username: claims.Username, Is_Admin: true}
+	_, err = db.NewUpdate().Model(user).Set("Is_Admin=?", user.Is_Admin).Where("username=?", claims.Username).Exec(ctx)
 
 	room := &Rooms{RoomCode: Code}
-	_, err := db.NewInsert().Model(room).Exec(ctx)
+	_, err = db.NewInsert().Model(room).Exec(ctx)
 	if err != nil {
 		fmt.Fprintf(w, "%v", err)
 		slog.Log(r.Context(), 8, "Failed to create a room")
 	}
+
+	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
+	_, err = db.NewInsert().Model(members).Exec(ctx)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

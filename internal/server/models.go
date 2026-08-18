@@ -18,10 +18,10 @@ type Rooms struct {
 }
 
 type RoomMembers struct {
-	RoomID int64  `bun:"room_id,pk"`
-	UserID int64  `bun:"user_id,pk"`
-	Room   *Rooms `bun:"rel:belongs-to,join:room_id=roomid"`
-	Users  *Users `bun:"rel:belongs-to,join:user_id=id"`
+	RoomID   int64  `bun:"room_id,pk"`
+	Username string `bun:"Username,pk"`
+	Room     *Rooms `bun:"rel:belongs-to,join:room_id=roomid"`
+	Users    *Users `bun:"rel:belongs-to,join:Username=username"`
 }
 
 type Claims struct {
