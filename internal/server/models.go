@@ -14,7 +14,7 @@ type Users struct {
 
 type Rooms struct {
 	RoomID   int64  `bun:"roomid,pk,autoincrement"`
-	RoomCode string `bun:"room_code,unique,notnull" json:"roomcode"`
+	RoomCode string `bun:"roomcode,unique,notnull" json:"roomcode"`
 }
 
 type RoomMembers struct {

@@ -42,5 +42,14 @@ func main() {
 
 	server.RegisterRoutes(Hub, r, db)
 
-	http.ListenAndServe(":"+os.Getenv("PORT"), r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Starting HTTP server on :%s", port)
+
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatalf("HTTP server failed: %v", err)
+	}
 }

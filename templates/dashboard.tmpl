@@ -19,8 +19,8 @@
     <br>
     <form class="form" id="formJoin">
         <label for="join" class="form-label">To Join</label>
-        <input type="text" name="join" id="join" class="form-input" autocomplete="off">
-        <button id="join" class="button-primary">Join</button>
+        <input type="text" name="roomcode" id="join" class="form-input" autocomplete="off">
+        <button id="button_join" class="button-primary">Join</button>
     </form>
     <br>
     <form id="formlogout">
@@ -37,7 +37,7 @@
 
         const createUrl = "http://localhost:8080/create"
         const roomUrl = "/room/"
-
+        const joinUrl = "/dashboard"
         const logouturl = "/logout"
         const formlogout = document.querySelector("#formlogout")
 
@@ -58,14 +58,27 @@
             console.log(result);
         })
 
-        formJoin.addEventListener("submit", (e) => {
+        formJoin.addEventListener("submit", async (e) => {
             e.preventDefault();
-            formJoinData = new FormData(formJoin);
 
-            const code = formJoinData.get("join")
-            console.log(code)
-            window.location.href = roomUrl + code;
-        })
+            const formJoinData = new FormData(formJoin);
+
+            console.log(formJoinData.get("roomcode"));
+
+            const response = await fetch("/dashboard", {
+                method: "POST",
+                body: formJoinData,
+            });
+
+            if (!response.ok) {
+                throw new Error(`response status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log(result);
+
+            window.location.href = "/room/" + result;
+        });
 
         formCreate.addEventListener("submit", async (e) => {
             e.preventDefault();

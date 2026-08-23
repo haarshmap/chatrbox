@@ -50,6 +50,7 @@
                 if (!response.ok) {
                     const err = await response.json()
                     console.log(err)
+                    return
                 }
                 const result = await response.text();
 

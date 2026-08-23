@@ -9,12 +9,12 @@ RUN go mod download
 
 COPY . .
 
-RUN  CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o go-url ./cmd/
+RUN  CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o chatrbox ./cmd/
 
 FROM alpine:latest
 WORKDIR /app
 
-COPY --from=builder /app/go-url .
+COPY --from=builder /app/chatrbox .
 EXPOSE 8080
 
 CMD [ "./chatrbox" ]

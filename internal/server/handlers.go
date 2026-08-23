@@ -127,22 +127,26 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// issue with the register handler for some reason
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
-
 	name := r.FormValue("username")
 	password := r.FormValue("password")
+
+	r.ParseForm()
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Log(r.Context(), 8, "failed to hash password")
 		fmt.Fprintf(w, "failed to hash password: %v", err)
+		return
 	}
 	user := &Users{Username: name, Password: string(hash)}
 	_, err = db.NewInsert().Model(user).Exec(ctx)
 	if err != nil {
-		slog.Log(r.Context(), 0, "failed to initialise row")
+		slog.Log(r.Context(), 8, "failed to initialise row")
 		fmt.Fprintf(w, "failed to initialise row: %v", err)
+		return
 	}
 }
 
@@ -267,5 +271,54 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(room.RoomCode)
+}
 
+func JoinHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
+
+	room := new(Rooms)
+
+	err = r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		fmt.Println("parse error:", err)
+	}
+	roomCode := r.FormValue("roomcode")
+	slog.Log(r.Context(), slog.LevelInfo, "to check roomcode", "roomCode ", roomCode)
+
+	err = db.NewSelect().Model(room).Where("roomcode = ?", roomCode).Scan(ctx)
+
+	_, err = db.NewSelect().Model((*Rooms)(nil)).Where("roomcode=?", roomCode).Exists(r.Context())
+	if err != nil {
+		slog.Error("failed to find room", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	cookie, err := r.Cookie("sessionToken")
+	if err != nil {
+		fmt.Fprintf(w, "%v", err)
+		slog.Log(r.Context(), 8, "Cookie not found")
+		return
+	}
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (any, error) {
+		if t.Method != jwt.SigningMethodHS256 {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		slog.Log(r.Context(), 8, "err is not nil")
+		fmt.Printf("%v", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
+	_, err = db.NewInsert().Model(members).Exec(ctx)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(room.RoomCode)
 }
