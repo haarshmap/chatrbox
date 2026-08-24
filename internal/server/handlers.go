@@ -234,27 +234,13 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	Code := GenerateShortCode(6)
 	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
 	var err error
+	var claims *Claims
 
-	cookie, err := r.Cookie("sessionToken")
+	claims, err = CookieClaims(r, "sessionToken", jwtKey)
 	if err != nil {
-		fmt.Fprintf(w, "%v", err)
-		slog.Log(r.Context(), 8, "No Cookie found")
-		return
-	}
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (any, error) {
-		if t.Method != jwt.SigningMethodHS256 {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
-		return jwtKey, nil
-	})
-	if err != nil || !token.Valid {
-		slog.Log(r.Context(), 8, "err is not nil")
-		fmt.Printf("%v", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
 	user := &Users{Username: claims.Username, Is_Admin: true}
 	_, err = db.NewUpdate().Model(user).Set("Is_Admin=?", user.Is_Admin).Where("username=?", claims.Username).Exec(ctx)
 
@@ -276,6 +262,7 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 func JoinHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
+	var claims *Claims
 
 	room := new(Rooms)
 
@@ -295,26 +282,11 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie("sessionToken")
+	claims, err = CookieClaims(r, "sessionToken", jwtKey)
 	if err != nil {
-		fmt.Fprintf(w, "%v", err)
-		slog.Log(r.Context(), 8, "Cookie not found")
-		return
-	}
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (any, error) {
-		if t.Method != jwt.SigningMethodHS256 {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
-		return jwtKey, nil
-	})
-	if err != nil || !token.Valid {
-		slog.Log(r.Context(), 8, "err is not nil")
-		fmt.Printf("%v", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
 	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
 	_, err = db.NewInsert().Model(members).Exec(ctx)
 
