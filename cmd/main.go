@@ -43,10 +43,10 @@ func main() {
 	server.RegisterRoutes(Hub, r, db)
 
 	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	_, err = server.InitRedis(ctx)
+	if err != nil {
+		log.Fatal(err)
 	}
-
 	log.Printf("Starting HTTP server on :%s", port)
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {
