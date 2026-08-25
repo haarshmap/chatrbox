@@ -34,9 +34,10 @@ type PageData struct {
 }
 
 type Client struct {
-	Hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
+	Hub      *Hub
+	conn     *websocket.Conn
+	send     chan []byte
+	username string
 }
 
 type Hub struct {
@@ -44,4 +45,9 @@ type Hub struct {
 	broadcast  chan []byte
 	register   chan *Client
 	unregister chan *Client
+}
+
+type Message struct {
+	Username string `json:"username"`
+	Message  string `json:"message"`
 }

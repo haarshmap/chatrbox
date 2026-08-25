@@ -113,6 +113,7 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse room.tmpl")
 		fmt.Fprintf(w, "%v", err)
+		return
 	}
 
 	data := PageData{
@@ -124,7 +125,9 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to execute login.tmpl")
 		fmt.Fprintf(w, "%v", err)
+		return
 	}
+
 }
 
 // issue with the register handler for some reason
@@ -191,13 +194,21 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := Upgrader.Upgrade(w, r, nil)
+	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
+
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to upgrade")
 		fmt.Fprintf(w, "%v", err)
 		return
 	}
 
-	client := &Client{Hub: h, conn: conn, send: make(chan []byte, 256)}
+	claims, err := CookieClaims(r, "sessionToken", jwtKey)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	client := &Client{Hub: h, conn: conn, send: make(chan []byte, 256), username: claims.Username}
 	client.Hub.register <- client
 
 	go client.WritePump()

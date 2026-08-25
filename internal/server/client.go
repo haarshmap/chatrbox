@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -40,7 +42,15 @@ func (c *Client) ReadPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.Hub.broadcast <- message
+
+		msg := Message{Username: c.username, Message: string(message)}
+		data, err := json.Marshal(msg)
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "%v", err)
+			return
+		}
+		fmt.Printf("BROADCAST: %s\n", data)
+		c.Hub.broadcast <- data
 	}
 }
 

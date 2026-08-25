@@ -16,8 +16,8 @@
     <br>
     <div id="log"></div>
     <form id="form" class="form">
-        <input type="submit" value="Send" class="button-primary"/>
-        <input type="text" id="msg" size="64" autofocus class="form-input"/>
+        <input type="submit" value="Send" class="button-primary" />
+        <input type="text" id="msg" size="64" autofocus class="form-input" />
     </form>
     <br>
     <br>
@@ -80,11 +80,33 @@
                     appendLog(item);
                 };
                 conn.onmessage = function (evt) {
-                    var messages = evt.data.split('\n');
-                    for (var i = 0; i < messages.length; i++) {
-                        var item = document.createElement("div");
-                        item.innerText = messages[i];
-                        appendLog(item);
+                    console.log("RAW MESSAGE:", JSON.stringify(evt.data));
+
+                    const messages = evt.data.split("\n");
+
+                    for (const rawMessage of messages) {
+                        if (!rawMessage.trim()) {
+                            continue;
+                        }
+
+                        try {
+                            const message = JSON.parse(rawMessage);
+
+                            const item = document.createElement("div");
+
+                            const username = document.createElement("strong");
+                            username.textContent = message.username + ": ";
+
+                            const text = document.createTextNode(message.message);
+
+                            item.appendChild(username);
+                            item.appendChild(text);
+
+                            appendLog(item);
+                        } catch (err) {
+                            console.error("Failed to parse:", JSON.stringify(rawMessage));
+                            console.error(err);
+                        }
                     }
                 };
             } else {
