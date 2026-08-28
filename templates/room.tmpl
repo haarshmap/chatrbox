@@ -21,18 +21,18 @@
     </form>
     <br>
     <br>
-    <form id="formlogout">
-        <button class="button-primary" id="logout">Logout</button>
+    <form id="formLeaveRoom">
+        <button class="button-primary" id="leave">Leave Room</button>
     </form>
     <br>
 
     <script>
-        const logouturl = "/logout"
-        const formlogout = document.querySelector("#formlogout")
+        const leaveurl = "/leave"
+        const formlogout = document.querySelector("#formLeaveRoom")
 
         formlogout.addEventListener("submit", async (e) => {
             e.preventDefault()
-            const response = await fetch(logouturl, {
+            const response = await fetch(leaveurl, {
                 method: "POST",
             });
             console.log(response.status);
@@ -43,7 +43,7 @@
             }
 
             const result = await response.text();
-            window.location.href = "/";
+            window.location.href = "/dashboard";
             console.log(result);
         })
 
@@ -80,8 +80,6 @@
                     appendLog(item);
                 };
                 conn.onmessage = function (evt) {
-                    console.log("RAW MESSAGE:", JSON.stringify(evt.data));
-
                     const messages = evt.data.split("\n");
 
                     for (const rawMessage of messages) {

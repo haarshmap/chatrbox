@@ -305,3 +305,32 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(room.RoomCode)
 }
+
+func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
+
+	members := new(RoomMembers)
+
+	claims, err := CookieClaims(r, "sessionToken", jwtKey)
+	if err != nil {
+		fmt.Fprintf(w, "%v", err)
+		slog.Log(r.Context(), 8, "Failed to cast claims")
+		return
+	}
+
+	err = db.NewSelect().Model(members).Where("username = ?", claims.Username).Scan(ctx)
+	if err != nil {
+		fmt.Fprintf(w, "%v", err)
+		slog.Log(r.Context(), 8, "failed to scan row")
+		return
+	}
+
+	_, err = db.NewDelete().Model((*RoomMembers)(nil)).Where("username = ? AND room_id = ?", members.Username, members.RoomID).Exec(ctx)
+	if err != nil {
+		fmt.Fprintf(w, "%v", err)
+		slog.Log(r.Context(), 8, "failed at the query")
+		return
+	}
+
+}

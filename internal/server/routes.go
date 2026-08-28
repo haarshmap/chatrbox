@@ -19,7 +19,7 @@ var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB) {
 	})
 
 	r.Post("/logout", LogoutHandler)
-
+	r.Post("/leave", LeaveRoomHandler)
 	r.Post("/create", CreateRoomHandler)
 
 	r.Group(func(r chi.Router) {
