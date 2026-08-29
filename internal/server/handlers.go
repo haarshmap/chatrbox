@@ -149,33 +149,38 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		Message string `json:"message"`
 	}
 
-	err = validate.Var(password, "required,min=8,cap,num,spec")
+	err = validate.Var(password, "required,cap,num,spec")
 	if err != nil {
-		var validationErrors validator.ValidationErrors
-		slog.Log(r.Context(), 8, "did the validator work?")
-
+		validationErrors, ok := err.(validator.ValidationErrors)
+		if !ok {
+			http.Error(w, "Validation error", http.StatusBadRequest)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 
-		for _, fieldErr := range validationErrors {
-			switch fieldErr.Tag() {
-			case "cap":
-				json.NewEncoder(w).Encode(ValidationErrorResponse{
-					Error:   "Cap_Letter",
-					Message: "Password must contain an uppercase letter",
-				})
-			case "num":
-				json.NewEncoder(w).Encode(ValidationErrorResponse{
-					Error:   "Number",
-					Message: "Password must contain a number",
-				})
-			case "spec":
-				json.NewEncoder(w).Encode(ValidationErrorResponse{
-					Error:   "Special_Char",
-					Message: "Password must contain a special character",
-				})
-			}
+		fieldErr := validationErrors[0]
+		switch fieldErr.Tag() {
+		case "cap":
+			json.NewEncoder(w).Encode(ValidationErrorResponse{
+				Error:   "Cap_Letter",
+				Message: "Password must contain an uppercase letter",
+			})
+			return
+		case "num":
+			json.NewEncoder(w).Encode(ValidationErrorResponse{
+				Error:   "Number",
+				Message: "Password must contain a number",
+			})
+			return
+		case "spec":
+			json.NewEncoder(w).Encode(ValidationErrorResponse{
+				Error:   "Special_Char",
+				Message: "Password must contain a special character",
+			})
+			return
 		}
+		return
 	}
 
 	r.ParseForm()
@@ -198,15 +203,37 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 
+	type ErrorResponse struct {
+		Error   string `json:"error"`
+		Message string `json:"message"`
+	}
+
 	name := r.FormValue("username")
 	password := r.FormValue("password")
+
+	r.ParseForm()
+
 	user := new(Users)
 	err = db.NewSelect().Model(user).Where("Username = ?", name).Scan(ctx)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "No_User_Found",
+			Message: "We couldnt find the user",
+		})
+		return
+	}
 
 	passcheck := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if passcheck != nil {
 		slog.Log(r.Context(), 8, "Password invalid")
-		fmt.Fprintln(w, "\nInvalid password")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Invalid_Password",
+			Message: "Write the password again",
+		})
 		return
 	}
 

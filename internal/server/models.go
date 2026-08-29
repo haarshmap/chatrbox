@@ -21,7 +21,7 @@ type RoomMembers struct {
 	RoomID   int64  `bun:"room_id,pk"`
 	Username string `bun:"Username,pk"`
 	Room     *Rooms `bun:"rel:belongs-to,join:room_id=roomid"`
-	Users    *Users `bun:"rel:belongs-to,join:Username=username"`
+	Users    *Users `bun:"rel:belongs-to,join:Username=username,unique"`
 }
 
 type Claims struct {
@@ -50,4 +50,9 @@ type Hub struct {
 type Message struct {
 	Username string `json:"username"`
 	Message  string `json:"message"`
+}
+
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
 }

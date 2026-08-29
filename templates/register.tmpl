@@ -10,14 +10,23 @@
 </head>
 
 <body>
+    <style>
+        .form-error-password {
+            color: var(--color-danger);
+            opacity: 0;
+        }
+    </style>
     <h1>Testing at Register</h1>
     <br>
     <form id="form" class="form">
         <label for="username" class="form-label">Username</label>
+        <br>
         <input class="form-input" type="text" name="username" id="username" required autocomplete="off">
         <br>
         <br>
-        <label for="password" class="form-label">Password</label>
+        <label for="password" class="form-label">Password <span class="form-error-password">Invalid
+                Password</span></label>
+                <br>
         <input class="form-input" type="password" name="password" id="password" required autocomplete="off">
         <br>
         <br>
@@ -31,6 +40,9 @@
         const form = document.querySelector("#form")
         const username = document.querySelector("#username")
         const password = document.querySelector("#password")
+
+        const errPassword = document.querySelector(".form-error-password")
+        errPassword.style.opacity = 0
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault()
@@ -50,6 +62,23 @@
                 if (!response.ok) {
                     const err = await response.json()
                     console.log(err)
+                    switch (err.error) {
+                        case "Cap_Letter":
+                            errPassword.textContent = "No capital letter included";
+                            errPassword.style.opacity = 1;
+                            break;
+                        case "Number":
+                            errPassword.textContent = "No number included";
+                            errPassword.style.opacity = 1;
+                            break;
+                        case "Special_Char":
+                            errPassword.textContent = "No special characters";
+                            errPassword.style.opacity = 1;
+                            break;
+                        default:
+                            throw new Error(`response status: ${response.status}`)
+                            break;
+                    }
                     return
                 }
                 const result = await response.text();

@@ -12,12 +12,28 @@
 <body>
     <h1>Testing at Login</h1>
     <br>
+
+    <style>
+        .form-error-username {
+            color: var(--color-danger);
+            opacity: 0;
+        }
+
+        .form-error-password {
+            color: var(--color-danger);
+            opacity: 0;
+        }
+    </style>
+
     <form id="form" class="form">
-        <label for="username" class="form-label">Username</label>
+        <label for="username" class="form-label">Username <span class="form-error-username">Incorrect Username</span></label>
+        <br>
         <input class="form-input" type="text" name="username" id="username" required autocomplete="off">
         <br>
         <br>
-        <label for="password" class="form-label">Password</label>
+        <label for="password" class="form-label">Password <span class="form-error-password">Password is
+                Incorrect</span></label>
+        <br>
         <input class="form-input" type="password" name="password" id="password" required autocomplete="off">
         <br>
         <br>
@@ -31,6 +47,12 @@
         const form = document.querySelector("#form")
         const username = document.querySelector("#username")
         const password = document.querySelector("#password")
+
+        const errPassword = document.querySelector(".form-error-password")
+        errPassword.style.opacity = 0
+
+        const errUser = document.querySelector(".form-error-username")
+        errUser.style.opacity = 0
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault()
@@ -50,6 +72,21 @@
                 if (!response.ok) {
                     const err = await response.json()
                     console.log(err)
+                    switch (err.error) {
+                        case "No_User_Found":
+                            errUser.style.opacity = 1;
+                            errPassword.style.opacity = 0;
+                            break;
+
+                        case "Invalid_Password":
+                            errUser.style.opacity = 0;
+                            errPassword.style.opacity = 1;
+                            break;
+                        default:
+                            throw new Error(`response status: ${response.status}`)
+                            break;
+                    }
+                    return
                 }
                 const result = await response.text();
 
