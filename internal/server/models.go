@@ -7,8 +7,8 @@ import (
 
 type Users struct {
 	ID       int64  `bun:"id,pk,autoincrement"`
-	Username string `bun:"username,unique,notnull"`
-	Password string `bun:"password,notnull"`
+	Username string `bun:"username,unique,notnull" validate:"required"`
+	Password string `bun:"password,notnull" validate:"required,cap,num,spec"`
 	Is_Admin bool   `bun:"is_admin,notnull,default:false"`
 }
 
