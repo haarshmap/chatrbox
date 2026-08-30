@@ -367,6 +367,13 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+
+	exists, err := db.NewSelect().Model((*RoomMembers)(nil)).Where("username = ?", claims.Username).Exists(r.Context())
+	if exists {
+		fmt.Fprintf(w, "user already there twin")
+		return
+	}
+
 	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
 	_, err = db.NewInsert().Model(members).Exec(ctx)
 
