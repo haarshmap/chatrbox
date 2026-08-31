@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://minima.namishh.com/dist/minima.min.css" />
     <script defer src="https://minima.namishh.com/dist/minima.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+        integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+        crossorigin="anonymous"></script>
     <title> Testingg </title>
 </head>
 
@@ -25,8 +28,9 @@
         }
     </style>
 
-    <form id="form" class="form">
-        <label for="username" class="form-label">Username <span class="form-error-username">Incorrect Username</span></label>
+    <form id="form" class="form" hx-post="/login" hx-trigger="submit">
+        <label for="username" class="form-label">Username <span class="form-error-username">Incorrect
+                Username</span></label>
         <br>
         <input class="form-input" type="text" name="username" id="username" required autocomplete="off">
         <br>
@@ -37,7 +41,7 @@
         <input class="form-input" type="password" name="password" id="password" required autocomplete="off">
         <br>
         <br>
-        <button type="submit" class="button-primary">Submit</button>
+        <button type="submit" class="button-primary" >Submit</button>
     </form>
 
     <script>
@@ -53,52 +57,6 @@
 
         const errUser = document.querySelector(".form-error-username")
         errUser.style.opacity = 0
-
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault()
-            const formData = new FormData(form)
-
-            const body = {
-                username: formData.get("username"),
-                password: formData.get("password"),
-            }
-            console.log(body)
-
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    body: formData,
-                });
-                if (!response.ok) {
-                    const err = await response.json()
-                    console.log(err)
-                    switch (err.error) {
-                        case "No_User_Found":
-                            errUser.style.opacity = 1;
-                            errPassword.style.opacity = 0;
-                            break;
-
-                        case "Invalid_Password":
-                            errUser.style.opacity = 0;
-                            errPassword.style.opacity = 1;
-                            break;
-                        default:
-                            throw new Error(`response status: ${response.status}`)
-                            break;
-                    }
-                    return
-                }
-                const result = await response.text();
-
-                console.log(result);
-
-                window.location.href = baseurl + "/dashboard";
-            }
-            catch (error) {
-                console.error(error)
-
-            }
-        })
     </script>
 </body>
 

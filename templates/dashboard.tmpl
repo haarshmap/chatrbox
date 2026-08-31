@@ -6,25 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://minima.namishh.com/dist/minima.min.css" />
     <script defer src="https://minima.namishh.com/dist/minima.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+        integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+        crossorigin="anonymous"></script>
     <title> Testingg </title>
 </head>
 
 <body>
     <h1>Dashboard</h1>
     <br>
-    <form class="form" id="formCreate">
+    <form class="form" id="formCreate" hx-post="/create" hx-trigger="submit">
         <button id="create" class="button-primary">Create a room</button>
         <br>
     </form>
     <br>
-    <form class="form" id="formJoin">
+    <form class="form" id="formJoin" hx-post="/dashboard" hx-trigger="submit">
         <label for="join" class="form-label">To Join</label>
         <input type="text" name="roomcode" id="join" class="form-input" autocomplete="off">
         <button id="button_join" class="button-primary">Join</button>
     </form>
     <br>
     <form id="formlogout">
-        <button class="button-primary" id="logout">Logout</button>
+        <button class="button-primary" id="logout" hx-post="/logout" hx-swap="none">Logout</button>
     </form>
     <br>
 
@@ -40,69 +43,6 @@
         const joinUrl = "/dashboard"
         const logouturl = "/logout"
         const formlogout = document.querySelector("#formlogout")
-
-        formlogout.addEventListener("submit", async (e) => {
-            e.preventDefault()
-            const response = await fetch(logouturl, {
-                method: "POST",
-            });
-            console.log(response.status);
-            console.log(response.headers.get("content-type"));
-
-            if (!response.ok) {
-                throw new Error(`response status: ${response.status}`)
-            }
-
-            const result = await response.text();
-            window.location.href = "/";
-            console.log(result);
-        })
-
-        formJoin.addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            const formJoinData = new FormData(formJoin);
-
-            console.log(formJoinData.get("roomcode"));
-
-            const response = await fetch("/dashboard", {
-                method: "POST",
-                body: formJoinData,
-            });
-
-            if (!response.ok) {
-                throw new Error(`response status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log(result);
-
-            window.location.href = "/room/" + result;
-        });
-
-        formCreate.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            try {
-                const response = await fetch(createUrl, {
-                    method: "POST",
-                });
-                console.log(response.status);
-                console.log(response.headers.get("content-type"));
-
-                if (!response.ok) {
-                    throw new Error(`response status: ${response.status}`)
-                }
-
-                const result = await response.json();
-                console.log(result)
-
-                window.location.href = roomUrl + result
-
-            }
-            catch (error) {
-                console.log(error)
-            }
-        })
     </script>
 </body>
 

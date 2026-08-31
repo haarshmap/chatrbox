@@ -198,6 +198,12 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "failed to initialise row: %v", err)
 		return
 	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/login")
+		w.WriteHeader(http.StatusFound)
+		return
+	}
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -257,8 +263,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   false,
 		Path:     "/",
 	}
-
 	http.SetCookie(w, &cookie)
+
+	w.Header().Set("HX-Redirect", "/dashboard")
+	w.WriteHeader(http.StatusFound)
+
 }
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -295,6 +304,12 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &cookie)
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/")
+		w.WriteHeader(http.StatusFound)
+		return
+	}
 
 	slog.Log(r.Context(), 0, "User logged out")
 
@@ -334,9 +349,8 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
 	_, err = db.NewInsert().Model(members).Exec(ctx)
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("HX-Redirect", "/room/"+room.RoomCode)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(room.RoomCode)
 }
 
 func JoinHandler(w http.ResponseWriter, r *http.Request) {
@@ -368,7 +382,7 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exists, err := db.NewSelect().Model((*RoomMembers)(nil)).Where("username = ?", claims.Username).Exists(r.Context())
+	exists, err := db.NewSelect().Model((*RoomMembers)(nil)).Where("room_id = ? AND username = ?", claims.Username, room.RoomCode).Exists(r.Context())
 	if exists {
 		fmt.Fprintf(w, "user already there twin")
 		return
@@ -377,9 +391,8 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
 	_, err = db.NewInsert().Model(members).Exec(ctx)
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("HX-Redirect", "/room/"+room.RoomCode)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(room.RoomCode)
 }
 
 func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
