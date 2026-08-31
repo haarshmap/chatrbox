@@ -18,8 +18,9 @@ type Rooms struct {
 }
 
 type RoomMembers struct {
+	ID       int64  `bun:"id,pk,autoincrement"`
 	RoomID   int64  `bun:"room_id"`
-	Username string `bun:"Username,pk"`
+	Username string `bun:"Username"`
 	Room     *Rooms `bun:"rel:belongs-to,join:room_id=roomid"`
 	Users    *Users `bun:"rel:belongs-to,join:Username=username"`
 }

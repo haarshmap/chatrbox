@@ -382,7 +382,7 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exists, err := db.NewSelect().Model((*RoomMembers)(nil)).Where("room_id = ? AND username = ?", claims.Username, room.RoomCode).Exists(r.Context())
+	exists, err := db.NewSelect().Model((*RoomMembers)(nil)).Where("room_id = ? AND username = ?", room.RoomID, claims.Username).Exists(r.Context())
 	if exists {
 		fmt.Fprintf(w, "user already there twin")
 		return
