@@ -33,19 +33,24 @@
         <input class="form-input" type="password" name="password" id="password" required autocomplete="off">
         <br>
         <br>
-        <button type="submit" class="button-primary" >Submit</button>
+        <button type="submit" class="button-primary">Submit</button>
     </form>
 
     <script>
-        url = "http://localhost:8080/register"
-        baseurl = "http://localhost:8080"
 
         const form = document.querySelector("#form")
-        const username = document.querySelector("#username")
-        const password = document.querySelector("#password")
-
         const errPassword = document.querySelector(".form-error-password")
-        errPassword.style.opacity = 0
+
+
+        document.body.addEventListener("htmx:afterRequest", function (event) {
+            const xhr = event.detail.xhr
+
+            if (xhr.status === 400) {
+                errPassword.textContent = xhr.responseText
+                errPassword.style.opacity = 1
+            }
+
+        })
     </script>
 </body>
 

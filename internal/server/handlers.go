@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -131,6 +130,8 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 
 }
 
+var validate = validator.New()
+
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	var err error
@@ -138,16 +139,12 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("username")
 	password := r.FormValue("password")
 
-	validate := validator.New()
-
+	form := Message{
+		Username: name,
+	}
 	validate.RegisterValidation("cap", passwordCheckForCaps)
 	validate.RegisterValidation("num", passwordCheckForNum)
 	validate.RegisterValidation("spec", passwordCheckForSpecChar)
-
-	type ValidationErrorResponse struct {
-		Error   string `json:"error"`
-		Message string `json:"message"`
-	}
 
 	err = validate.Var(password, "required,cap,num,spec")
 	if err != nil {
@@ -156,31 +153,22 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Validation error", http.StatusBadRequest)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-
 		fieldErr := validationErrors[0]
+
 		switch fieldErr.Tag() {
+		case "required":
+			form.Message = "Password is required"
 		case "cap":
-			json.NewEncoder(w).Encode(ValidationErrorResponse{
-				Error:   "Cap_Letter",
-				Message: "Password must contain an uppercase letter",
-			})
-			return
+			form.Message = "Password must contain an uppercase letter"
 		case "num":
-			json.NewEncoder(w).Encode(ValidationErrorResponse{
-				Error:   "Number",
-				Message: "Password must contain a number",
-			})
-			return
+			form.Message = "Password must contain a number"
 		case "spec":
-			json.NewEncoder(w).Encode(ValidationErrorResponse{
-				Error:   "Special_Char",
-				Message: "Password must contain a special character",
-			})
-			return
+			form.Message = "Password must contain a special character"
 		}
+
+		http.Error(w, form.Message, http.StatusBadRequest)
 		return
+
 	}
 
 	r.ParseForm()
@@ -209,37 +197,20 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 
-	type ErrorResponse struct {
-		Error   string `json:"error"`
-		Message string `json:"message"`
-	}
-
 	name := r.FormValue("username")
 	password := r.FormValue("password")
-
-	r.ParseForm()
 
 	user := new(Users)
 	err = db.NewSelect().Model(user).Where("Username = ?", name).Scan(ctx)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(ErrorResponse{
-			Error:   "No_User_Found",
-			Message: "We couldnt find the user",
-		})
+		fmt.Fprint(w, `<p class="error">Invalid username or password</p>`)
 		return
 	}
 
 	passcheck := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if passcheck != nil {
 		slog.Log(r.Context(), 8, "Password invalid")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(ErrorResponse{
-			Error:   "Invalid_Password",
-			Message: "Write the password again",
-		})
+		fmt.Fprint(w, `<p class="error">Invalid username or password</p>`)
 		return
 	}
 
@@ -421,5 +392,8 @@ func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Log(r.Context(), 8, "failed at the query")
 		return
 	}
+
+	w.Header().Set("HX-Redirect", "/dashboard")
+	w.WriteHeader(http.StatusOK)
 
 }

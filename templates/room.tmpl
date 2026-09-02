@@ -24,7 +24,7 @@
     </form>
     <br>
     <br>
-    <form id="formLeaveRoom">
+    <form id="formLeaveRoom" hx-post="/leave" hx-trigger="submit">
         <button class="button-primary" id="leave">Leave Room</button>
     </form>
     <br>
@@ -32,23 +32,6 @@
     <script>
         const leaveurl = "/leave"
         const formlogout = document.querySelector("#formLeaveRoom")
-
-        formlogout.addEventListener("submit", async (e) => {
-            e.preventDefault()
-            const response = await fetch(leaveurl, {
-                method: "POST",
-            });
-            console.log(response.status);
-            console.log(response.headers.get("content-type"));
-
-            if (!response.ok) {
-                throw new Error(`response status: ${response.status}`)
-            }
-
-            const result = await response.text();
-            window.location.href = "/dashboard";
-            console.log(result);
-        })
 
         window.onload = function () {
             var conn;
