@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
+	"html/template"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+var tmpl *template.Template
 
 const (
 	WriteWait  = 10 * time.Second
@@ -43,14 +45,24 @@ func (c *Client) ReadPump() {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 
-		msg := Message{Username: c.username, Message: string(message)}
-		data, err := json.Marshal(msg)
+		var form Message
+
+		err = json.Unmarshal(message, &form)
 		if err != nil {
-			fmt.Fprintf(os.Stdout, "%v", err)
-			return
+			fmt.Printf("failed to decode message: %v\n", err)
+			continue
 		}
-		fmt.Printf("BROADCAST: %s\n", data)
-		c.Hub.broadcast <- data
+
+		form.Username = c.username
+		var buf bytes.Buffer
+
+		err = tmpl.ExecuteTemplate(&buf, "message", form)
+		if err != nil {
+			fmt.Printf("failed to render room.tmpl: %v\n", err)
+			continue
+		}
+
+		c.Hub.broadcast <- buf.Bytes()
 	}
 }
 

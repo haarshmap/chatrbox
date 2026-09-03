@@ -31,7 +31,8 @@ type Claims struct {
 }
 
 type PageData struct {
-	Title string
+	Title    string
+	RoomCode string
 }
 
 type Client struct {

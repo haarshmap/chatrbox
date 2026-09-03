@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
         integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
         crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx-ext-ws@2.0.0/ws.js"></script>
     <title> Testingg </title>
 </head>
 
@@ -17,89 +18,34 @@
     <br>
     <p>Currently just slop i suppose</p>
     <br>
-    <div id="log"></div>
-    <form id="form" class="form">
-        <input type="submit" value="Send" class="button-primary" />
-        <input type="text" id="msg" size="64" autofocus class="form-input" />
-    </form>
-    <br>
-    <br>
-    <form id="formLeaveRoom" hx-post="/leave" hx-trigger="submit">
-        <button class="button-primary" id="leave">Leave Room</button>
-    </form>
-    <br>
-
-    <script>
-        const leaveurl = "/leave"
-        const formlogout = document.querySelector("#formLeaveRoom")
-
-        window.onload = function () {
-            var conn;
-            var msg = document.getElementById("msg");
-            var log = document.getElementById("log");
-
-            function appendLog(item) {
-                var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
-                log.appendChild(item);
-                if (doScroll) {
-                    log.scrollTop = log.scrollHeight - log.clientHeight;
-                }
-            }
-
-            document.getElementById("form").onsubmit = function () {
-                if (!conn) {
-                    return false;
-                }
-                if (!msg.value) {
-                    return false;
-                }
-                conn.send(msg.value);
-                msg.value = "";
-                return false;
-            };
-
-            if (window["WebSocket"]) {
-                conn = new WebSocket("ws://" + document.location.host + "/ws");
-                conn.onclose = function (evt) {
-                    var item = document.createElement("div");
-                    item.innerHTML = "<b>Connection closed.</b>";
-                    appendLog(item);
-                };
-                conn.onmessage = function (evt) {
-                    const messages = evt.data.split("\n");
-
-                    for (const rawMessage of messages) {
-                        if (!rawMessage.trim()) {
-                            continue;
-                        }
-
-                        try {
-                            const message = JSON.parse(rawMessage);
-
-                            const item = document.createElement("div");
-
-                            const username = document.createElement("strong");
-                            username.textContent = message.username + ": ";
-
-                            const text = document.createTextNode(message.message);
-
-                            item.appendChild(username);
-                            item.appendChild(text);
-
-                            appendLog(item);
-                        } catch (err) {
-                            console.error("Failed to parse:", JSON.stringify(rawMessage));
-                            console.error(err);
-                        }
-                    }
-                };
-            } else {
-                var item = document.createElement("div");
-                item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
-                appendLog(item);
-            }
-        };
-    </script>
+    <div hx-ext="ws" ws-connect="/ws/{{ .RoomCode }}">
+        <div id="log">
+        </div>
+        <form id="form" class="form" ws-send>
+            <input type="submit" value="Send" class="button-primary">
+            <input type="text" name="message" id="msg" size="64" autofocus class="form-input">
+        </form>
+        <br>
+        <br>
+        <form id="formLeaveRoom" hx-post="/leave" hx-trigger="submit">
+            <button class="button-primary" id="leave">Leave Room</button>
+        </form>
+        <br>
 </body>
+
+<script>
+    document.body.addEventListener("htmx:wsAfterSend", function (event) {
+        document.getElementById("form").reset();
+        document.getElementById("msg").focus();
+    });
+</script>
+
+{{ define "message" }}
+<div id="log" hx-swap-oob="beforeend">
+    <p>
+        <strong>{{ .Username }}</strong>: {{ .Message }}
+    </p>
+</div>
+{{ end }}
 
 </html>

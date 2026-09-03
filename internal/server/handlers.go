@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
@@ -26,6 +27,17 @@ var (
 		},
 	}
 )
+
+func InitTemplates() error {
+	var err error
+
+	tmpl, err = template.ParseFiles("templates/room.tmpl")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 var ctx = context.Background()
 
@@ -70,7 +82,7 @@ func RegisterHandlerPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func LoginHandlerPage(w http.ResponseWriter, r *http.Request) {
-	templ, err := template.ParseFiles("templates/login.tmpl")
+	tmpl, err := template.ParseFiles("templates/login.tmpl")
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse login.tmpl")
 		fmt.Fprintf(w, "%v", err)
@@ -82,7 +94,7 @@ func LoginHandlerPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err = templ.Execute(w, data)
+	err = tmpl.Execute(w, data)
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to execute login.tmpl")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -109,19 +121,22 @@ func DashboardHandlerPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
-	templ, err := template.ParseFiles("templates/room.tmpl")
+	tmpl, err := template.ParseFiles("templates/room.tmpl")
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse room.tmpl")
 		fmt.Fprintf(w, "%v", err)
 		return
 	}
 
+	roomCode := chi.URLParam(r, "id")
+
 	data := PageData{
-		Title: "Testing",
+		Title:    "Testing",
+		RoomCode: roomCode,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err = templ.Execute(w, data)
+	err = tmpl.Execute(w, data)
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to execute login.tmpl")
 		fmt.Fprintf(w, "%v", err)
@@ -156,8 +171,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		fieldErr := validationErrors[0]
 
 		switch fieldErr.Tag() {
-		case "required":
-			form.Message = "Password is required"
+
 		case "cap":
 			form.Message = "Password must contain an uppercase letter"
 		case "num":

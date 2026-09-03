@@ -37,6 +37,9 @@ func main() {
 		fmt.Println("SQLite database initialized successfully with Bun!")
 	}
 
+	if err := server.InitTemplates(); err != nil {
+		log.Fatal(err)
+	}
 	Hub := server.NewHub()
 	go Hub.Run()
 

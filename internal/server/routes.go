@@ -27,6 +27,6 @@ var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB) {
 		r.Get("/dashboard", DashboardHandlerPage)
 		r.Post("/dashboard", JoinHandler)
 		r.Get("/room/{id}", RoomHandlerPage)
-		r.Get("/ws", WebSocketHandler)
+		r.Get("/ws/{id}", WebSocketHandler)
 	})
 }
