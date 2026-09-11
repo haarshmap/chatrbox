@@ -180,7 +180,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			form.Message = "Password must contain a special character"
 		}
 
-		http.Error(w, form.Message, http.StatusBadRequest)
+		http.Error(w, string(form.Message), http.StatusBadRequest)
 		return
 
 	}

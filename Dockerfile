@@ -1,20 +1,12 @@
-FROM golang:1.26-alpine AS builder
-
-RUN apk add --no-cache gcc musl-dev
-
+FROM golang:1.27 AS builder
 WORKDIR /app
-
-COPY go.* ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+RUN CGO_ENABLED=0 go build -o main ./cmd
 
-RUN  CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o chatrbox ./cmd/
+FROM gcr.io/distroless/static-debian12
 
-FROM alpine:latest
-WORKDIR /app
-
-COPY --from=builder /app/chatrbox .
-EXPOSE 8080
-
-CMD [ "./chatrbox" ]
+COPY --from=builder /app/main /
+CMD ["/main"]

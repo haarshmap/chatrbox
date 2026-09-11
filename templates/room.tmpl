@@ -10,6 +10,7 @@
         integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
         crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx-ext-ws@2.0.0/ws.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
     <title> Testingg </title>
 </head>
 
@@ -30,6 +31,7 @@
         <form id="formLeaveRoom" hx-post="/leave" hx-trigger="submit">
             <button class="button-primary" id="leave">Leave Room</button>
         </form>
+
         <br>
 </body>
 
@@ -37,13 +39,13 @@
     document.body.addEventListener("htmx:wsAfterSend", function (event) {
         document.getElementById("form").reset();
         document.getElementById("msg").focus();
-    });
+    }
 </script>
 
 {{ define "message" }}
 <div id="log" hx-swap-oob="beforeend">
     <p>
-        <strong>{{ .Username }}</strong>: {{ .Message }}
+        <strong>{{ .Username }}</strong>: <span hx-disable> {{ .Message }} </span>
     </p>
 </div>
 {{ end }}

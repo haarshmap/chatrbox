@@ -13,7 +13,7 @@ var limiter *redis_rate.Limiter
 
 func InitRedis(ctx context.Context) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ADDR"),
+		Addr:     os.Getenv("REDIS_PORT"),
 		Password: os.Getenv("REDISPASSWORD"),
 	})
 

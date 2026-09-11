@@ -1,0 +1,16 @@
+
+- admin functions and periodic bans
+- attachments
+- chat history
+// check out
+- dashboards displaying what all rooms im part of
+- markdown responses
+// need to add
+- olap databases and time series databases
+- polls
+- reactions
+- replies
+- sending big files over servers
+- threads
+- time logs
+- typing indicators

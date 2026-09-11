@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-
+    "github.com/joho/godotenv"
 	"github.com/go-chi/chi/v5"
 	"github.com/haarshmap/chatrbox/internal/server"
 	"github.com/uptrace/bun"
@@ -19,6 +19,10 @@ func main() {
 	var err error
 	ctx := context.Background()
 	r := chi.NewRouter()
+
+    if err := godotenv.Load(); err != nil {
+        log.Fatal("Error loading .env file")
+    }
 
 	sqlite, err := sql.Open(sqliteshim.ShimName, "data.db")
 	if err != nil {
