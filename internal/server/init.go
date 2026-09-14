@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
 )
@@ -22,4 +24,21 @@ func InitRedis(ctx context.Context) (*redis.Client, error) {
 	}
 	limiter = redis_rate.NewLimiter(rdb)
 	return rdb, nil
+}
+
+func InitClickhouse() (driver.Conn, error) {
+	newConn, err := clickhouse.Open(&clickhouse.Options{
+		Addr: []string{"clickhouse:8123"},
+		Auth: clickhouse.Auth{
+			Database: "logs",
+			Username: "default",
+			Password: "",
+		},
+		Protocol: clickhouse.HTTP,
+	})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Print("Currently initialising clickhouse")
+	return newConn, nil
 }

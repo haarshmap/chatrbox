@@ -7,9 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-    "github.com/joho/godotenv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/haarshmap/chatrbox/internal/server"
+	"github.com/joho/godotenv"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	"github.com/uptrace/bun/driver/sqliteshim"
@@ -20,13 +21,28 @@ func main() {
 	ctx := context.Background()
 	r := chi.NewRouter()
 
-    if err := godotenv.Load(); err != nil {
-        log.Fatal("Error loading .env file")
-    }
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
-	sqlite, err := sql.Open(sqliteshim.ShimName, "data.db")
+	sqlite, err := sql.Open(sqliteshim.ShimName, "/var/data/data.db")
 	if err != nil {
 		log.Fatalf("failed to initialise database %v", err)
+	}
+
+	conn, err := server.InitClickhouse()
+	if err != nil {
+		log.Fatalf("Failed to initialise Clickhouse", err)
+	}
+	if err == nil {
+		fmt.Printf("\ninitialised clickhouse")
+	}
+
+	err = conn.Exec(ctx, `
+			CREATE TABLE IF NOT EXISTS message_logs (Col1 UInt8, Col2 String, Col3 String)
+		`)
+	if err != nil {
+		log.Fatalf("Failed to create clickhouse db", err)
 	}
 
 	db := bun.NewDB(sqlite, sqlitedialect.New())
