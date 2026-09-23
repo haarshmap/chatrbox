@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/haarshmap/chatrbox/internal/server"
 	"github.com/joho/godotenv"
@@ -25,31 +26,37 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	sqlite, err := sql.Open(sqliteshim.ShimName, "/var/data/data.db")
+	duckdb, err := sql.Open("duckdb", "duckdb.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer duckdb.Close()
+
+	if err := duckdb.Ping(); err != nil {
+		log.Fatalf("DuckDB database ping failed: %v", err)
+	} else {
+		fmt.Println("DuckDB database initialised successfully")
+	}
+
+	sqlite, err := sql.Open(sqliteshim.ShimName, "data.db")
 	if err != nil {
 		log.Fatalf("failed to initialise database %v", err)
-	}
-
-	conn, err := server.InitClickhouse()
-	if err != nil {
-		log.Fatalf("Failed to initialise Clickhouse", err)
-	}
-	if err == nil {
-		fmt.Printf("\ninitialised clickhouse")
-	}
-
-	err = conn.Exec(ctx, `
-			CREATE TABLE IF NOT EXISTS message_logs (Col1 UInt8, Col2 String, Col3 String)
-		`)
-	if err != nil {
-		log.Fatalf("Failed to create clickhouse db", err)
 	}
 
 	db := bun.NewDB(sqlite, sqlitedialect.New())
 
 	_, err = db.NewCreateTable().Model((*server.Users)(nil)).IfNotExists().Exec(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create Users table")
+	}
 	_, err = db.NewCreateTable().Model((*server.Rooms)(nil)).IfNotExists().Exec(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create Rooms table")
+	}
 	_, err = db.NewCreateTable().Model((*server.RoomMembers)(nil)).IfNotExists().Exec(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create RoomMembers table")
+	}
 
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Database ping failed: %v", err)

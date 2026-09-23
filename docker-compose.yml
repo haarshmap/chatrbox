@@ -14,31 +14,16 @@ services:
     depends_on:
       redis:
         condition: service_started
-      clickhouse:
-        condition: service_healthy
   redis:
     image: redis:latest
     container_name: redis
+    ports:
+      - "6379:6379"
     volumes:
       - redis-data:/data
     env_file:
       - .env
     restart: unless-stopped
-  clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    environment:
-      CLICKHOUSE_SKIP_USER_SETUP: 1
-      CLICKHOUSE_DB: "logs"
-    ports:
-      - "9000:9000"
-      - "8123:8123"
-    healthcheck:
-        test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
-        interval: 3s
-        timeout: 3s
-        retries: 10
-        start_period: 5s
-
 volumes:
   sqlite_data:
     driver: local
