@@ -50,6 +50,7 @@ type Hub struct {
 }
 
 type Message struct {
+	RoomId   string `json:"roomid"`
 	Username string `json:"username"`
-    Message string `json:"message"`
+	Message  string `json:"message"`
 }

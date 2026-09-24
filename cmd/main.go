@@ -30,12 +30,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer duckdb.Close()
-
 	if err := duckdb.Ping(); err != nil {
 		log.Fatalf("DuckDB database ping failed: %v", err)
 	} else {
 		fmt.Println("DuckDB database initialised successfully")
+	}
+
+	_, err = duckdb.Exec(`CREATE TABLE IF NOT EXISTS message_logs (id INTEGER, room_id TEXT, username TEXT, message TEXT, time_stamp DATETIME )`)
+	if err != nil {
+		log.Fatalf("failed to create the message_logs %v", err)
 	}
 
 	sqlite, err := sql.Open(sqliteshim.ShimName, "data.db")

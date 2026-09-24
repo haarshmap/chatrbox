@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -87,8 +88,10 @@ func (c *Client) WritePump() {
 				fmt.Printf("%v", err)
 				return
 			}
-			w.Write(Message)
-
+			_, err = w.Write(Message)
+			if err != nil {
+				log.Fatalf("failed to write message %v", err)
+			}
 			n := len(c.send)
 			for i := 0; i < n; i++ {
 				w.Write(newline)
