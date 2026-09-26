@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 )
@@ -50,7 +52,8 @@ type Hub struct {
 }
 
 type Message struct {
-	RoomId   string `json:"roomid"`
-	Username string `json:"username"`
-	Message  string `json:"message"`
+	RoomId     string    `json:"roomid"`
+	Username   string    `json:"username"`
+	Message    string    `json:"message"`
+	Time_Stamp time.Time `json:"time_stamp"`
 }

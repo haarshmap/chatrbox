@@ -21,6 +21,7 @@ import (
 var (
 	db       *bun.DB
 	h        *Hub
+	msg      chan<- Message
 	Upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
@@ -255,7 +256,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
+func WebSocketHelper(w http.ResponseWriter, r *http.Request, msg chan<- Message) {
 	conn, err := Upgrader.Upgrade(w, r, nil)
 	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
 
@@ -275,7 +276,11 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	client.Hub.register <- client
 
 	go client.WritePump()
-	go client.ReadPump()
+	go client.ReadPump(msg)
+}
+
+func WebSocketHandler(w http.ResponseWriter, r *http.Request, msg chan<- Message) {
+	WebSocketHelper(w, r, msg)
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {

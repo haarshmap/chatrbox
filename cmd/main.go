@@ -11,6 +11,7 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/haarshmap/chatrbox/internal/server"
+	"github.com/haarshmap/chatrbox/internal/tasks"
 	"github.com/joho/godotenv"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
@@ -73,7 +74,11 @@ func main() {
 	Hub := server.NewHub()
 	go Hub.Run()
 
-	server.RegisterRoutes(Hub, r, db)
+	msgChan := make(chan server.Message, 256)
+
+	go tasks.MessageWorker(duckdb, msgChan)
+
+	server.RegisterRoutes(Hub, r, db, msgChan)
 
 	port := os.Getenv("PORT")
 	_, err = server.InitRedis(ctx)

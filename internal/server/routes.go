@@ -1,11 +1,13 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/uptrace/bun"
 )
 
-var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB) {
+var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB, msg chan Message) {
 	db = database
 	h = hub
 
@@ -27,6 +29,8 @@ var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB) {
 		r.Get("/dashboard", DashboardHandlerPage)
 		r.Post("/dashboard", JoinHandler)
 		r.Get("/room/{id}", RoomHandlerPage)
-		r.Get("/ws/{id}", WebSocketHandler)
+		r.Get("/ws/{id}", func(w http.ResponseWriter, req *http.Request) {
+			WebSocketHandler(w, req, msg)
+		})
 	})
 }

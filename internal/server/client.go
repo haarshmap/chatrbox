@@ -25,14 +25,20 @@ var (
 	space   = []byte{' '}
 )
 
-func (c *Client) ReadPump() {
+func (c *Client) ReadPump(msg chan<- Message) {
 	defer func() {
 		c.Hub.unregister <- c
-		c.conn.Close()
+		err := c.conn.Close()
+		if err != nil {
+			log.Fatalf("read close %v", err)
+		}
 	}()
 
 	c.conn.SetReadLimit(MaxSize)
-	c.conn.SetReadDeadline(time.Now().Add(PongWait))
+	err := c.conn.SetReadDeadline(time.Now().Add(PongWait))
+	if err != nil {
+		log.Fatalf("SetReadDeadline error %v", err)
+	}
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(PongWait)); return nil })
 
 	for {
@@ -63,7 +69,19 @@ func (c *Client) ReadPump() {
 			continue
 		}
 
+		time := time.Now()
+
 		c.Hub.broadcast <- buf.Bytes()
+
+		log.Printf("ReadPump sending to channel: %p", msg)
+
+		msg <- Message{
+			RoomId:     form.RoomId,
+			Username:   form.Username,
+			Message:    form.Message,
+			Time_Stamp: time,
+		}
+		log.Println("ReadPump successfully queued message")
 	}
 }
 
@@ -71,15 +89,24 @@ func (c *Client) WritePump() {
 	Tick := time.NewTicker(PingPeriod)
 	defer func() {
 		Tick.Stop()
-		c.conn.Close()
+		err := c.conn.Close()
+		if err != nil {
+			log.Fatalf("write close %v", err)
+		}
 	}()
 
 	for {
 		select {
 		case Message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
+			err := c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
+			if err != nil {
+				log.Fatalf("writepump setwritedeadline %v", err)
+			}
 			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				if err != nil {
+					log.Fatalf("writemessage %v", err)
+				}
 				return
 			}
 
@@ -94,8 +121,14 @@ func (c *Client) WritePump() {
 			}
 			n := len(c.send)
 			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
+				_, err := w.Write(newline)
+				if err != nil {
+					log.Fatalf("writeLine %v", err)
+				}
+				_, err1 := w.Write(<-c.send)
+				if err1 != nil {
+					log.Fatalf("writeLine1 %v", err)
+				}
 			}
 
 			if err := w.Close(); err != nil {
@@ -103,7 +136,10 @@ func (c *Client) WritePump() {
 				return
 			}
 		case <-Tick.C:
-			c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
+			err := c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
+			if err != nil {
+				log.Fatalf("idk man the last one or smtg %v", err)
+			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				fmt.Printf("%v", err)
 				return
