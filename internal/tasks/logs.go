@@ -11,7 +11,7 @@ func MessageWorker(db *sql.DB, msgChan <-chan server.Message) {
 	log.Printf("worker received channel: %p", msgChan)
 	stmt, err := db.Prepare(`
         INSERT INTO message_logs
-        (room_id, username, message, time_stamp)
+        (roomcode, username, message, time_stamp)
         VALUES (?, ?, ?, ?)
     `)
 	if err != nil {
@@ -24,7 +24,7 @@ func MessageWorker(db *sql.DB, msgChan <-chan server.Message) {
 
 	for msg := range msgChan {
 		_, err := stmt.Exec(
-			msg.RoomId,
+			msg.RoomCode,
 			msg.Username,
 			msg.Message,
 			msg.Time_Stamp,

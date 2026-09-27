@@ -42,6 +42,7 @@ type Client struct {
 	conn     *websocket.Conn
 	send     chan []byte
 	username string
+	roomcode string
 }
 
 type Hub struct {
@@ -52,7 +53,7 @@ type Hub struct {
 }
 
 type Message struct {
-	RoomId     string    `json:"roomid"`
+	RoomCode   string    `json:"roomid"`
 	Username   string    `json:"username"`
 	Message    string    `json:"message"`
 	Time_Stamp time.Time `json:"time_stamp"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"log"
 	"log/slog"
 	"math/rand"
 	"net/http"
@@ -260,6 +261,8 @@ func WebSocketHelper(w http.ResponseWriter, r *http.Request, msg chan<- Message)
 	conn, err := Upgrader.Upgrade(w, r, nil)
 	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
 
+	roomCode := chi.URLParam(r, "id")
+
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to upgrade")
 		fmt.Fprintf(w, "%v", err)
@@ -272,14 +275,22 @@ func WebSocketHelper(w http.ResponseWriter, r *http.Request, msg chan<- Message)
 		return
 	}
 
-	client := &Client{Hub: h, conn: conn, send: make(chan []byte, 256), username: claims.Username}
+	client := &Client{Hub: h, conn: conn, send: make(chan []byte, 256), username: claims.Username, roomcode: roomCode}
 	client.Hub.register <- client
+
+	log.Printf(
+		"Client initialized: username=%q roomCode=%q",
+		client.username,
+		client.roomcode,
+	)
 
 	go client.WritePump()
 	go client.ReadPump(msg)
 }
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request, msg chan<- Message) {
+	roomCode := chi.URLParam(r, "id")
+	log.Printf("WebSocketHandler roomCode = %q", roomCode)
 	WebSocketHelper(w, r, msg)
 }
 

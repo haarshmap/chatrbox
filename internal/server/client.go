@@ -76,8 +76,8 @@ func (c *Client) ReadPump(msg chan<- Message) {
 		log.Printf("ReadPump sending to channel: %p", msg)
 
 		msg <- Message{
-			RoomId:     form.RoomId,
-			Username:   form.Username,
+			RoomCode:   c.roomcode,
+			Username:   c.username,
 			Message:    form.Message,
 			Time_Stamp: time,
 		}
