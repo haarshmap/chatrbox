@@ -4,6 +4,6 @@
 tmp
 *.db
 *.sqlite
-.clickhouse/
+*.wal
 .git
 clickhouse

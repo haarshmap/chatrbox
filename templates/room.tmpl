@@ -39,9 +39,12 @@
 
 <script>
     document.body.addEventListener("htmx:wsAfterSend", function (event) {
-        document.getElementById("form").reset();
-        document.getElementById("msg").focus();
-    }
+        const form = document.getElementById("form");
+        const input = document.getElementById("msg");
+
+        form.reset();
+        input.focus();
+    });
 </script>
 
 {{ define "message" }}
