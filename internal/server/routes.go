@@ -1,14 +1,16 @@
 package server
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/uptrace/bun"
 )
 
-var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB, msg chan Message) {
+var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB, duckdb *sql.DB, msg chan Message) {
 	db = database
+	ddb = duckdb
 	h = hub
 
 	r.Group(func(r chi.Router) {
@@ -23,6 +25,7 @@ var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB, msg chan Mes
 	r.Post("/logout", LogoutHandler)
 	r.Post("/leave", LeaveRoomHandler)
 	r.Post("/create", CreateRoomHandler)
+	r.Get("/room/{id}/msg", GetMessageLogs)
 
 	r.Group(func(r chi.Router) {
 		r.Use(CheckCookieAuth)

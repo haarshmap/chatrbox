@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
@@ -21,6 +22,7 @@ import (
 
 var (
 	db       *bun.DB
+	ddb      *sql.DB
 	h        *Hub
 	msg      chan<- Message
 	Upgrader = websocket.Upgrader{
@@ -48,7 +50,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse index.tmpl")
 		fmt.Fprintf(w, "%v", err)
-
 	}
 
 	data := PageData{
@@ -68,7 +69,6 @@ func RegisterHandlerPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse register.tmpl")
 		fmt.Fprintf(w, "%v", err)
-
 	}
 
 	data := PageData{
@@ -88,7 +88,6 @@ func LoginHandlerPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Log(r.Context(), 8, "Failed to parse login.tmpl")
 		fmt.Fprintf(w, "%v", err)
-
 	}
 
 	data := PageData{
@@ -278,19 +277,11 @@ func WebSocketHelper(w http.ResponseWriter, r *http.Request, msg chan<- Message)
 	client := &Client{Hub: h, conn: conn, send: make(chan []byte, 256), username: claims.Username, roomcode: roomCode}
 	client.Hub.register <- client
 
-	log.Printf(
-		"Client initialized: username=%q roomCode=%q",
-		client.username,
-		client.roomcode,
-	)
-
 	go client.WritePump()
 	go client.ReadPump(msg)
 }
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request, msg chan<- Message) {
-	roomCode := chi.URLParam(r, "id")
-	log.Printf("WebSocketHandler roomCode = %q", roomCode)
 	WebSocketHelper(w, r, msg)
 }
 
@@ -426,4 +417,35 @@ func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("HX-Redirect", "/dashboard")
 	w.WriteHeader(http.StatusOK)
 
+}
+
+func GetMessageLogs(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "id")
+
+	row, err := ddb.Query(`SELECT * FROM message_logs WHERE roomcode = ?`, roomCode)
+	if err != nil {
+		log.Fatalf("Could not select from duckdb database %v", err)
+	}
+
+	//to check for messages and how the query is working ig
+	var messageList []Message
+
+	for row.Next() {
+		var msg Message
+		if err := row.Scan(&msg.RoomCode, &msg.Username, &msg.Message, &msg.Time_Stamp); err != nil {
+			log.Fatalf("idk failed to scan or smtg ig", err)
+		}
+
+		messageList = append(messageList, msg)
+	}
+	if err := row.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+
+	if err := tmpl.ExecuteTemplate(w, "messageHistory", messageList); err != nil {
+		log.Printf("failed to execute template: %v", err)
+	}
 }

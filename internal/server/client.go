@@ -60,7 +60,10 @@ func (c *Client) ReadPump(msg chan<- Message) {
 			continue
 		}
 
+		time := time.Now()
+
 		form.Username = c.username
+		form.Time_Stamp = time
 		var buf bytes.Buffer
 
 		err = tmpl.ExecuteTemplate(&buf, "message", form)
@@ -69,11 +72,7 @@ func (c *Client) ReadPump(msg chan<- Message) {
 			continue
 		}
 
-		time := time.Now()
-
 		c.Hub.broadcast <- buf.Bytes()
-
-		log.Printf("ReadPump sending to channel: %p", msg)
 
 		msg <- Message{
 			RoomCode:   c.roomcode,
@@ -81,7 +80,6 @@ func (c *Client) ReadPump(msg chan<- Message) {
 			Message:    form.Message,
 			Time_Stamp: time,
 		}
-		log.Println("ReadPump successfully queued message")
 	}
 }
 

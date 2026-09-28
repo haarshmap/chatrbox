@@ -19,6 +19,8 @@
     <br>
     <p>Currently just slop i suppose</p>
     <br>
+    <div id="messageHistory" hx-get="/room/{{ .RoomCode }}/msg" hx-trigger = "load" hx-swap="innerHTML">
+    </div>
     <div hx-ext="ws" ws-connect="/ws/{{ .RoomCode }}">
         <div id="log">
         </div>
@@ -45,9 +47,20 @@
 {{ define "message" }}
 <div id="log" hx-swap-oob="beforeend">
     <p>
-        <strong>{{ .Username }}</strong>: <span hx-disable> {{ .Message }} </span>
+        <strong>{{ .Username }}</strong>: <span hx-disable> {{ .Message }}</span> <span>{{ .Time_Stamp }}</span>
     </p>
 </div>
 {{ end }}
 
+{{ define "messageHistory" }}
+    {{ range . }}
+        <div class="chat-message">
+            <strong>{{ .Username }}:</strong>
+            <span class="body">{{ .Message }}</span>
+            <span class="time">{{ .Time_Stamp }}</span>
+        </div>
+    {{ else }}
+        <p>No messages in this room yet.</p>
+    {{ end }}
+{{ end }}
 </html>

@@ -78,7 +78,7 @@ func main() {
 
 	go tasks.MessageWorker(duckdb, msgChan)
 
-	server.RegisterRoutes(Hub, r, db, msgChan)
+	server.RegisterRoutes(Hub, r, db, duckdb, msgChan)
 
 	port := os.Getenv("PORT")
 	_, err = server.InitRedis(ctx)
