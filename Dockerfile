@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/root/go.mod go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o main ./cmd
+RUN CGO_ENABLED=1 GOOS=linux go build -o main ./cmd
 
 FROM gcr.io/distroless/static-debian12
 

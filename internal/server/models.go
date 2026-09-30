@@ -21,9 +21,9 @@ type Rooms struct {
 
 type RoomMembers struct {
 	ID       int64  `bun:"id,pk,autoincrement"`
-	RoomID   int64  `bun:"room_id"`
+	RoomCode string `bun:"room_code"`
 	Username string `bun:"Username"`
-	Room     *Rooms `bun:"rel:belongs-to,join:room_id=roomid"`
+	Room     *Rooms `bun:"rel:belongs-to,join:room_code=roomcode"`
 	Users    *Users `bun:"rel:belongs-to,join:Username=username"`
 }
 

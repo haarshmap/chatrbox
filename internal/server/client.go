@@ -30,14 +30,14 @@ func (c *Client) ReadPump(msg chan<- Message) {
 		c.Hub.unregister <- c
 		err := c.conn.Close()
 		if err != nil {
-			log.Fatalf("read close %v", err)
+			log.Printf("read close %v", err)
 		}
 	}()
 
 	c.conn.SetReadLimit(MaxSize)
 	err := c.conn.SetReadDeadline(time.Now().Add(PongWait))
 	if err != nil {
-		log.Fatalf("SetReadDeadline error %v", err)
+		log.Printf("SetReadDeadline error %v", err)
 	}
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(PongWait)); return nil })
 
@@ -89,7 +89,7 @@ func (c *Client) WritePump() {
 		Tick.Stop()
 		err := c.conn.Close()
 		if err != nil {
-			log.Fatalf("write close %v", err)
+			log.Printf("write close %v", err)
 		}
 	}()
 
@@ -98,12 +98,12 @@ func (c *Client) WritePump() {
 		case Message, ok := <-c.send:
 			err := c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
 			if err != nil {
-				log.Fatalf("writepump setwritedeadline %v", err)
+				log.Printf("writepump setwritedeadline %v", err)
 			}
 			if !ok {
 				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
-					log.Fatalf("writemessage %v", err)
+					log.Printf("writemessage %v", err)
 				}
 				return
 			}
@@ -115,17 +115,17 @@ func (c *Client) WritePump() {
 			}
 			_, err = w.Write(Message)
 			if err != nil {
-				log.Fatalf("failed to write message %v", err)
+				log.Printf("failed to write message %v", err)
 			}
 			n := len(c.send)
 			for i := 0; i < n; i++ {
 				_, err := w.Write(newline)
 				if err != nil {
-					log.Fatalf("writeLine %v", err)
+					log.Printf("writeLine %v", err)
 				}
 				_, err1 := w.Write(<-c.send)
 				if err1 != nil {
-					log.Fatalf("writeLine1 %v", err)
+					log.Printf("writeLine1 %v", err)
 				}
 			}
 
@@ -136,7 +136,7 @@ func (c *Client) WritePump() {
 		case <-Tick.C:
 			err := c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
 			if err != nil {
-				log.Fatalf("idk man the last one or smtg %v", err)
+				log.Printf("idk man the last one or smtg %v", err)
 			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				fmt.Printf("%v", err)

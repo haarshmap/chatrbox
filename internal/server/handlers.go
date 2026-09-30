@@ -105,19 +105,37 @@ func LoginHandlerPage(w http.ResponseWriter, r *http.Request) {
 func DashboardHandlerPage(w http.ResponseWriter, r *http.Request) {
 	templ, err := template.ParseFiles("templates/dashboard.tmpl")
 	if err != nil {
-		slog.Log(r.Context(), 8, "Failed to parse dashboard.tmpl")
-		fmt.Fprintf(w, "%v", err)
+		slog.Error("failed to parse dashboard.tmpl", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
-	data := PageData{
-		Title: "Testing",
+	jwtKey := []byte(os.Getenv("SECRET_KEY"))
+
+	claims, err := CookieClaims(r, "sessionToken", jwtKey)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var memberList []RoomMembers
+
+	err = db.NewSelect().
+		Model(&memberList).
+		Where("username = ?", claims.Username).
+		Scan(r.Context())
+
+	if err != nil {
+		slog.Error("failed to get user's rooms", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err = templ.Execute(w, data)
+
+	err = templ.Execute(w, memberList)
 	if err != nil {
-		slog.Log(r.Context(), 8, "Failed to execute index.tmpl")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("failed to execute dashboard.tmpl", "error", err)
 	}
 }
 
@@ -338,8 +356,8 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Log(r.Context(), 8, "Failed to create a room")
 	}
 
-	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
-	_, err = db.NewInsert().Model(members).Exec(ctx)
+	members := &RoomMembers{RoomCode: room.RoomCode, Username: claims.Username}
+	_, err = db.NewInsert().Model(members).Exec(r.Context())
 
 	w.Header().Set("HX-Redirect", "/room/"+room.RoomCode)
 	w.WriteHeader(http.StatusOK)
@@ -374,16 +392,16 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exists, err := db.NewSelect().Model((*RoomMembers)(nil)).Where("room_id = ? AND username = ?", room.RoomID, claims.Username).Exists(r.Context())
+	exists, err := db.NewSelect().Model((*RoomMembers)(nil)).Where("room_code = ? AND username = ?", room.RoomCode, claims.Username).Exists(r.Context())
 	if exists {
-		fmt.Fprintf(w, "user already there twin")
+		http.Redirect(w, r, "/room/"+room.RoomCode, http.StatusSeeOther)
 		return
 	}
 
-	members := &RoomMembers{RoomID: room.RoomID, Username: claims.Username}
+	members := &RoomMembers{RoomCode: room.RoomCode, Username: claims.Username}
 	_, err = db.NewInsert().Model(members).Exec(ctx)
 
-	w.Header().Set("HX-Redirect", "/room/"+room.RoomCode)
+	w.Header().Set("HX-Redirect", "/dashboard")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -391,7 +409,8 @@ func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
 
-	members := new(RoomMembers)
+	roomCode := chi.URLParam(r, "id")
+	slog.Info("room code", "roomCode", roomCode)
 
 	claims, err := CookieClaims(r, "sessionToken", jwtKey)
 	if err != nil {
@@ -400,14 +419,10 @@ func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = db.NewSelect().Model(members).Where("username = ?", claims.Username).Scan(ctx)
-	if err != nil {
-		fmt.Fprintf(w, "%v", err)
-		slog.Log(r.Context(), 8, "failed to scan row")
-		return
+	_, err = db.NewDelete().Model((*RoomMembers)(nil)).Where("username = ? AND room_code = ?", claims.Username, roomCode).Exec(r.Context())
+	if err == nil {
+		fmt.Println("Executed query")
 	}
-
-	_, err = db.NewDelete().Model((*RoomMembers)(nil)).Where("username = ? AND room_id = ?", members.Username, members.RoomID).Exec(ctx)
 	if err != nil {
 		fmt.Fprintf(w, "%v", err)
 		slog.Log(r.Context(), 8, "failed at the query")

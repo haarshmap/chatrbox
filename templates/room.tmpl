@@ -30,7 +30,7 @@
         </form>
         <br>
         <br>
-        <form id="formLeaveRoom" hx-post="/leave" hx-trigger="submit">
+        <form id="formLeaveRoom" hx-post="/room/{{ .RoomCode }}/leave" hx-trigger="submit">
             <button class="button-primary" id="leave">Leave Room</button>
         </form>
 
@@ -47,6 +47,7 @@
     });
 </script>
 
+//templates
 {{ define "message" }}
 <div id="log" hx-swap-oob="beforeend">
     <p>

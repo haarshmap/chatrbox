@@ -30,6 +30,9 @@
         <button class="button-primary" id="logout" hx-post="/logout" hx-swap="none">Logout</button>
     </form>
     <br>
+    <div id="roomsList">
+       {{ template "roomList" . }}
+    </div>
 
     <script>
         const formJoin = document.querySelector("#formJoin")
@@ -45,5 +48,16 @@
         const formlogout = document.querySelector("#formlogout")
     </script>
 </body>
+
+{{ define "roomList" }}
+    {{ range . }}
+        <div class="roomsList">
+            <a href="/room/{{ .RoomCode }}"> {{ .RoomCode }} </a>
+        </div>
+    {{ else }}
+        <p>Not there in any rooms yet.</p>
+    {{ end }}
+{{ end }}
+
 
 </html>
