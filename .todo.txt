@@ -1,12 +1,11 @@
-
 - admin functions and periodic bans
 - attachments
-- chat history
+- chat history (done)
 // check out
-- dashboards displaying what all rooms im part of
+- dashboards displaying what all rooms im part of (done)
 - markdown responses
 // need to add
-- olap databases and time series databases
+- olap databases and time series databases (done)
 - polls
 - reactions
 - replies

@@ -16,6 +16,8 @@
     <h1>Dashboard</h1>
     <br>
     <form class="form" id="formCreate" hx-post="/create" hx-trigger="submit">
+        <label> Room Name (Optional) </label>
+        <input type="text" name="roomname" id="create" class="form-input" autocomplete="off">
         <button id="create" class="button-primary">Create a room</button>
         <br>
     </form>
@@ -50,14 +52,31 @@
 </body>
 
 {{ define "roomList" }}
-    {{ range . }}
-        <div class="roomsList">
-            <a href="/room/{{ .RoomCode }}"> {{ .RoomCode }} </a>
-        </div>
-    {{ else }}
-        <p>Not there in any rooms yet.</p>
-    {{ end }}
-{{ end }}
+<table>
+    <thead>
+        <tr>
+            <th>Room Name</th>
+            <th>Room Code</th>
+        </tr>
+    </thead>
 
+    <tbody>
+        {{ range . }}
+        <tr>
+            <td>
+                <p>{{ .RoomName }}</p>
+            </td>
+            <td>
+                <a href="/room/{{ .RoomCode }}" class="button-link">{{ .RoomCode }}</a>
+            </td>
+        </tr>
+        {{ else }}
+        <tr>
+            <td>Not in any rooms yet.</td>
+        </tr>
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}
 
 </html>

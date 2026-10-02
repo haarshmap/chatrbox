@@ -149,9 +149,23 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 
 	roomCode := chi.URLParam(r, "id")
 
+	roomMembers := new(Rooms)
+
+	err = db.NewSelect().
+		Model(roomMembers).
+		Where("roomCode = ?", roomCode).
+		Scan(r.Context())
+
+	if err != nil {
+		slog.Error("failed to get user's rooms", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	data := PageData{
 		Title:    "Testing",
 		RoomCode: roomCode,
+		RoomName: roomMembers.RoomName,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -336,6 +350,12 @@ func GenerateShortCode(n int) string {
 }
 
 func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
+	roomName := r.FormValue("roomname")
+
+	if roomName == "" {
+		roomName = ""
+	}
+
 	Code := GenerateShortCode(6)
 	var jwtKey = []byte(os.Getenv("SECRET_KEY"))
 	var err error
@@ -349,14 +369,14 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	user := &Users{Username: claims.Username, Is_Admin: true}
 	_, err = db.NewUpdate().Model(user).Set("Is_Admin=?", user.Is_Admin).Where("username=?", claims.Username).Exec(ctx)
 
-	room := &Rooms{RoomCode: Code}
+	room := &Rooms{RoomName: roomName, RoomCode: Code}
 	_, err = db.NewInsert().Model(room).Exec(ctx)
 	if err != nil {
 		fmt.Fprintf(w, "%v", err)
 		slog.Log(r.Context(), 8, "Failed to create a room")
 	}
 
-	members := &RoomMembers{RoomCode: room.RoomCode, Username: claims.Username}
+	members := &RoomMembers{RoomName: roomName, RoomCode: room.RoomCode, Username: claims.Username}
 	_, err = db.NewInsert().Model(members).Exec(r.Context())
 
 	w.Header().Set("HX-Redirect", "/room/"+room.RoomCode)

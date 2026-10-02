@@ -1,8 +1,6 @@
 package server
 
 import (
-	"time"
-
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 )
@@ -16,15 +14,22 @@ type Users struct {
 
 type Rooms struct {
 	RoomID   int64  `bun:"roomid,pk,autoincrement"`
+	RoomName string `bun:"roomname" json:"roomname"`
 	RoomCode string `bun:"roomcode,unique,notnull" json:"roomcode"`
 }
 
 type RoomMembers struct {
 	ID       int64  `bun:"id,pk,autoincrement"`
+	RoomName string `bun:"room_name"`
 	RoomCode string `bun:"room_code"`
 	Username string `bun:"Username"`
 	Room     *Rooms `bun:"rel:belongs-to,join:room_code=roomcode"`
 	Users    *Users `bun:"rel:belongs-to,join:Username=username"`
+}
+
+type ToDisplay struct {
+	RoomName string
+	RoomCode string
 }
 
 type Claims struct {
@@ -35,6 +40,7 @@ type Claims struct {
 type PageData struct {
 	Title    string
 	RoomCode string
+	RoomName string
 }
 
 type Client struct {
@@ -53,8 +59,8 @@ type Hub struct {
 }
 
 type Message struct {
-	RoomCode   string    `json:"roomid"`
-	Username   string    `json:"username"`
-	Message    string    `json:"message"`
-	Time_Stamp time.Time `json:"time_stamp"`
+	RoomCode   string `json:"roomid"`
+	Username   string `json:"username"`
+	Message    string `json:"message"`
+	Time_Stamp string `json:"time_stamp"`
 }

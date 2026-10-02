@@ -60,10 +60,12 @@ func (c *Client) ReadPump(msg chan<- Message) {
 			continue
 		}
 
-		time := time.Now()
+		origTime := time.Now()
+		layout := "2-Jan-06 15:04:05"
+		formattedTime := origTime.Format(layout)
 
 		form.Username = c.username
-		form.Time_Stamp = time
+		form.Time_Stamp = formattedTime
 		var buf bytes.Buffer
 
 		err = tmpl.ExecuteTemplate(&buf, "message", form)
@@ -78,7 +80,7 @@ func (c *Client) ReadPump(msg chan<- Message) {
 			RoomCode:   c.roomcode,
 			Username:   c.username,
 			Message:    form.Message,
-			Time_Stamp: time,
+			Time_Stamp: formattedTime,
 		}
 	}
 }
