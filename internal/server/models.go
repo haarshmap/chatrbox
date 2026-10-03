@@ -9,7 +9,6 @@ type Users struct {
 	ID       int64  `bun:"id,pk,autoincrement"`
 	Username string `bun:"username,unique,notnull" validate:"required"`
 	Password string `bun:"password,notnull" validate:"required,cap,num,spec"`
-	Is_Admin bool   `bun:"is_admin,notnull,default:false"`
 }
 
 type Rooms struct {
@@ -22,6 +21,7 @@ type RoomMembers struct {
 	ID       int64  `bun:"id,pk,autoincrement"`
 	RoomName string `bun:"room_name"`
 	RoomCode string `bun:"room_code"`
+	Is_Admin bool   `bun:"role"`
 	Username string `bun:"Username"`
 	Room     *Rooms `bun:"rel:belongs-to,join:room_code=roomcode"`
 	Users    *Users `bun:"rel:belongs-to,join:Username=username"`
@@ -41,6 +41,7 @@ type PageData struct {
 	Title    string
 	RoomCode string
 	RoomName string
+	Roles    bool
 }
 
 type Client struct {

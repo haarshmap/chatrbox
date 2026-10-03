@@ -30,10 +30,13 @@
         </form>
         <br>
         <br>
+        <div id="admin">
+            {{ template "isAdmin" . }}
+        </div>
+        <br>
         <form id="formLeaveRoom" hx-post="/room/{{ .RoomCode }}/leave" hx-trigger="submit">
             <button class="button-primary" id="leave">Leave Room</button>
         </form>
-
         <br>
 </body>
 
@@ -63,8 +66,17 @@
             <span class="body">{{ .Message }}</span>
             <span class="time">{{ .Time_Stamp }}</span>
         </div>
-    {{ else }}
-        <p>No messages in this room yet.</p>
+    {{ end }}
+{{ end }}
+
+{{ define "isAdmin" }}
+    {{ if .Roles }}
+        <h1>Admin</h1>
+        <br>
+        <form class="form" id="toKick" hx-post="/room/{{ .RoomCode }}/kick" hx-trigger="submit">
+            <input class="form-input" id="usernameKick" name="usernameKick" type="text">
+            <input type="submit" value="To Kick" class="button-primary">
+        </form>
     {{ end }}
 {{ end }}
 </html>

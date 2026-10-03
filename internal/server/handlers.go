@@ -147,13 +147,21 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roomCode := chi.URLParam(r, "id")
+	jwtKey := []byte(os.Getenv("SECRET_KEY"))
 
-	roomMembers := new(Rooms)
+	roomCode := chi.URLParam(r, "id")
+	claims, err := CookieClaims(r, "sessionToken", jwtKey)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	room := new(Rooms)
+	RoomMembers := new(RoomMembers)
 
 	err = db.NewSelect().
-		Model(roomMembers).
-		Where("roomCode = ?", roomCode).
+		Model(room).
+		Where("RoomCode = ?", roomCode).
 		Scan(r.Context())
 
 	if err != nil {
@@ -162,10 +170,21 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = db.NewSelect().
+		Model(RoomMembers).
+		Where("room_code=? AND username=?", roomCode, claims.Username).
+		Scan(r.Context())
+	if err != nil {
+		slog.Error("failed to get roomMembers", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	data := PageData{
 		Title:    "Testing",
 		RoomCode: roomCode,
-		RoomName: roomMembers.RoomName,
+		RoomName: room.RoomName,
+		Roles:    RoomMembers.Is_Admin,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -366,8 +385,6 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	user := &Users{Username: claims.Username, Is_Admin: true}
-	_, err = db.NewUpdate().Model(user).Set("Is_Admin=?", user.Is_Admin).Where("username=?", claims.Username).Exec(ctx)
 
 	room := &Rooms{RoomName: roomName, RoomCode: Code}
 	_, err = db.NewInsert().Model(room).Exec(ctx)
@@ -376,7 +393,7 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Log(r.Context(), 8, "Failed to create a room")
 	}
 
-	members := &RoomMembers{RoomName: roomName, RoomCode: room.RoomCode, Username: claims.Username}
+	members := &RoomMembers{RoomName: roomName, RoomCode: room.RoomCode, Username: claims.Username, Is_Admin: true}
 	_, err = db.NewInsert().Model(members).Exec(r.Context())
 
 	w.Header().Set("HX-Redirect", "/room/"+room.RoomCode)
@@ -418,7 +435,7 @@ func JoinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members := &RoomMembers{RoomCode: room.RoomCode, Username: claims.Username}
+	members := &RoomMembers{RoomCode: room.RoomCode, Username: claims.Username, Is_Admin: false}
 	_, err = db.NewInsert().Model(members).Exec(ctx)
 
 	w.Header().Set("HX-Redirect", "/dashboard")
@@ -483,4 +500,24 @@ func GetMessageLogs(w http.ResponseWriter, r *http.Request) {
 	if err := tmpl.ExecuteTemplate(w, "messageHistory", messageList); err != nil {
 		log.Printf("failed to execute template: %v", err)
 	}
+}
+
+func KickMember(w http.ResponseWriter, r *http.Request) {
+	username := r.FormValue("usernameKick")
+	roomCode := chi.URLParam(r, "id")
+
+	result, err := db.NewDelete().Model((*RoomMembers)(nil)).Where("username=? AND room_code=?", username, roomCode).Exec(r.Context())
+	if err != nil {
+		log.Printf("%v", err)
+	}
+
+	_, err = result.RowsAffected()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("HX-Redirect", "/room/"+roomCode)
+	w.WriteHeader(http.StatusOK)
+
 }

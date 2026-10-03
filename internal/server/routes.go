@@ -26,6 +26,7 @@ var RegisterRoutes = func(hub *Hub, r chi.Router, database *bun.DB, duckdb *sql.
 	r.Post("/room/{id}/leave", LeaveRoomHandler)
 	r.Post("/create", CreateRoomHandler)
 	r.Get("/room/{id}/msg", GetMessageLogs)
+	r.Post("/room/{id}/kick", KickMember)
 
 	r.Group(func(r chi.Router) {
 		r.Use(CheckCookieAuth)
