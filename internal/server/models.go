@@ -54,7 +54,7 @@ type Client struct {
 
 type Hub struct {
 	clients    map[*Client]bool
-	broadcast  chan []byte
+	broadcast  chan Event
 	register   chan *Client
 	unregister chan *Client
 }
@@ -64,4 +64,11 @@ type Message struct {
 	Username   string `json:"username"`
 	Message    string `json:"message"`
 	Time_Stamp string `json:"time_stamp"`
+}
+
+type Event struct {
+	Type      string `json:"type"`
+	MessageID string `json:"message_id"`
+	UserID    int64  `json:"user_id"`
+	Content   string `json:"content"`
 }

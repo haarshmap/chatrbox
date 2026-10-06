@@ -3,7 +3,7 @@ package server
 func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
-		broadcast:  make(chan []byte),
+		broadcast:  make(chan Event),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
@@ -19,10 +19,10 @@ func (h *Hub) Run() {
 				delete(h.clients, client)
 				close(client.send)
 			}
-		case message := <-h.broadcast:
+		case event := <-h.broadcast:
 			for client := range h.clients {
 				select {
-				case client.send <- message:
+				case client.send <- event:
 				default:
 					close(client.send)
 					delete(h.clients, client)
