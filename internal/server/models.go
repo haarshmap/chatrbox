@@ -47,7 +47,7 @@ type PageData struct {
 type Client struct {
 	Hub      *Hub
 	conn     *websocket.Conn
-	send     chan []byte
+	send     chan Event
 	username string
 	roomcode string
 }
@@ -68,7 +68,11 @@ type Message struct {
 
 type Event struct {
 	Type      string `json:"type"`
-	MessageID string `json:"message_id"`
-	UserID    int64  `json:"user_id"`
-	Content   string `json:"content"`
+	MessageID string `json:"message_id,omitempty"`
+	UserID    int64  `json:"user_id,omitempty"`
+	RoomCode  string `json:"room_code,omitempty"`
+	Username  string `json:"username,omitempty"`
+	Content   string `json:"content,omitempty"`
+	TimeStamp string `json:"time_stamp,omitempty"`
+	HTML      string `json:html`
 }

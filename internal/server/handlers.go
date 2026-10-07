@@ -325,7 +325,7 @@ func WebSocketHelper(w http.ResponseWriter, r *http.Request, msg chan<- Message)
 		return
 	}
 
-	client := &Client{Hub: h, conn: conn, send: make(chan []byte, 256), username: claims.Username, roomcode: roomCode}
+	client := &Client{Hub: h, conn: conn, send: make(chan Event, 256), username: claims.Username, roomcode: roomCode}
 	client.Hub.register <- client
 
 	go client.WritePump()

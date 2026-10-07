@@ -74,74 +74,81 @@ func (c *Client) ReadPump(msg chan<- Message) {
 			continue
 		}
 
-		c.Hub.broadcast <- buf.Bytes()
-
 		msg <- Message{
 			RoomCode:   c.roomcode,
 			Username:   c.username,
 			Message:    form.Message,
 			Time_Stamp: formattedTime,
 		}
+
+		event := Event{
+			Type:      "text",
+			RoomCode:  c.roomcode,
+			Username:  c.username,
+			Content:   form.Message,
+			TimeStamp: form.Time_Stamp,
+			HTML:      buf.String(),
+		}
+
+		c.Hub.broadcast <- event
+
 	}
 }
 
 func (c *Client) WritePump() {
-	Tick := time.NewTicker(PingPeriod)
+	ticker := time.NewTicker(PingPeriod)
+
 	defer func() {
-		Tick.Stop()
-		err := c.conn.Close()
-		if err != nil {
-			log.Printf("write close %v", err)
+		ticker.Stop()
+
+		if err := c.conn.Close(); err != nil {
+			log.Printf("write close: %v", err)
 		}
 	}()
 
 	for {
 		select {
-		case Message, ok := <-c.send:
-			err := c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
-			if err != nil {
-				log.Printf("writepump setwritedeadline %v", err)
+		case event, ok := <-c.send:
+
+			if err := c.conn.SetWriteDeadline(
+				time.Now().Add(WriteWait),
+			); err != nil {
+				log.Printf("SetWriteDeadline: %v", err)
+				return
 			}
+
 			if !ok {
-				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				if err != nil {
-					log.Printf("writemessage %v", err)
+				if err := c.conn.WriteMessage(
+					websocket.CloseMessage,
+					[]byte{},
+				); err != nil {
+					log.Printf("close message: %v", err)
 				}
 				return
 			}
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				fmt.Printf("%v", err)
+			if err := c.conn.WriteMessage(
+				websocket.TextMessage,
+				[]byte(event.HTML),
+			); err != nil {
+				log.Printf("failed to write event: %v", err)
 				return
-			}
-			_, err = w.Write(Message)
-			if err != nil {
-				log.Printf("failed to write message %v", err)
-			}
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				_, err := w.Write(newline)
-				if err != nil {
-					log.Printf("writeLine %v", err)
-				}
-				_, err1 := w.Write(<-c.send)
-				if err1 != nil {
-					log.Printf("writeLine1 %v", err)
-				}
 			}
 
-			if err := w.Close(); err != nil {
-				fmt.Printf("%v", err)
+		case <-ticker.C:
+
+			if err := c.conn.SetWriteDeadline(
+				time.Now().Add(WriteWait),
+			); err != nil {
+				log.Printf("SetWriteDeadline: %v", err)
 				return
 			}
-		case <-Tick.C:
-			err := c.conn.SetWriteDeadline(time.Now().Add(WriteWait))
-			if err != nil {
-				log.Printf("idk man the last one or smtg %v", err)
-			}
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				fmt.Printf("%v", err)
+
+			if err := c.conn.WriteMessage(
+				websocket.PingMessage,
+				nil,
+			); err != nil {
+				log.Printf("ping: %v", err)
 				return
 			}
 		}
