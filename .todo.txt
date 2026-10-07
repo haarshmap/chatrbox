@@ -1,3 +1,4 @@
+
 - admin functions and periodic bans
 - attachments
 - chat history (done)
@@ -11,5 +12,5 @@
 - replies
 - sending big files over servers
 - threads
-- time logs
+- time logs (done)
 - typing indicators
