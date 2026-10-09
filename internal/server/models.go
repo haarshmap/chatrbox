@@ -5,6 +5,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	EventMessage    = "message"
+	EventSent       = "sent"
+	EventDelivered  = "delivered"
+	EventRead       = "read"
+	EventTyping     = "typing"
+	EventStopTyping = "stop_typing"
+)
+
 type Users struct {
 	ID       int64  `bun:"id,pk,autoincrement"`
 	Username string `bun:"username,unique,notnull" validate:"required"`
@@ -42,6 +51,7 @@ type PageData struct {
 	RoomCode string
 	RoomName string
 	Roles    bool
+	Username string
 }
 
 type Client struct {
@@ -53,13 +63,15 @@ type Client struct {
 }
 
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan Event
-	register   chan *Client
-	unregister chan *Client
+	clients       map[*Client]bool
+	broadcast     chan Event
+	register      chan *Client
+	unregister    chan *Client
+	messageSender map[string]*Client
 }
 
 type Message struct {
+	MessageID  string `json:"message_id"`
 	RoomCode   string `json:"roomid"`
 	Username   string `json:"username"`
 	Message    string `json:"message"`
@@ -67,12 +79,18 @@ type Message struct {
 }
 
 type Event struct {
+	Type      string  `json:"type"`
+	MessageID string  `json:"message_id,omitempty"`
+	RoomCode  string  `json:"room_code,omitempty"`
+	Username  string  `json:"username,omitempty"`
+	Content   string  `json:"content,omitempty"`
+	TimeStamp string  `json:"time_stamp,omitempty"`
+	HTML      string  `json:html`
+	Sender    *Client `json:"-"`
+}
+
+type ClientEvent struct {
 	Type      string `json:"type"`
 	MessageID string `json:"message_id,omitempty"`
-	UserID    int64  `json:"user_id,omitempty"`
-	RoomCode  string `json:"room_code,omitempty"`
-	Username  string `json:"username,omitempty"`
-	Content   string `json:"content,omitempty"`
-	TimeStamp string `json:"time_stamp,omitempty"`
-	HTML      string `json:html`
+	Message   string `json:"message,omitempty"`
 }

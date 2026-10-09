@@ -25,6 +25,7 @@
         <div id="log">
         </div>
         <form id="form" class="form" ws-send>
+            <input type="hidden" name="type" value="message">
             <input type="submit" value="Send" class="button-primary">
             <input type="text" name="message" id="msg" size="64" autofocus class="form-input">
         </form>
@@ -41,23 +42,142 @@
 </body>
 
 <script>
-    document.body.addEventListener("htmx:wsAfterSend", function (event) {
-        const form = document.getElementById("form");
-        const input = document.getElementById("msg");
+    const form = document.getElementById("form");
+    const input = document.getElementById("msg");
+    const log = document.getElementById("log");
+    const currentUsername = document.body.dataset.username;
 
-        form.reset();
-        input.focus();
+    const deliveryForm = document.getElementById("deliveryForm");
+    const deliveryMessageID = document.getElementById("deliveryMessageID");
+    const readForm = document.getElementById("readForm");
+    const readMessageID = document.getElementById("readMessageID");
+
+    const observedMessages = new Set();
+    const readMessages = new Set();
+
+    form.addEventListener("submit", () => {
+        setTimeout(() => {
+            input.value = "";
+            input.focus();
+        }, 0);
+    });
+
+    function updateStatus(event) {
+        const status = document.getElementById(`status-${event.message_id}`);
+
+        if (!status) {
+            return;
+        }
+
+        if (event.type === "sent") {
+            status.textContent = "Sent";
+        } else if (event.type === "delivered") {
+            status.textContent = "Delivered";
+        } else if (event.type === "read") {
+            status.textContent = "Read";
+        }
+    }
+
+    function sendDelivery(messageID) {
+        deliveryMessageID.value = messageID;
+        deliveryForm.requestSubmit();
+    }
+
+    function sendRead(messageID) {
+        if (readMessages.has(messageID)) {
+            return;
+        }
+
+        readMessages.add(messageID);
+        readMessageID.value = messageID;
+        readForm.requestSubmit();
+    }
+
+    const visibilityObserver = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+            if (!entry.isIntersecting) {
+                continue;
+            }
+
+            const message = entry.target;
+
+            if (message.dataset.username !== currentUsername) {
+                sendRead(message.id.replace("message-", ""));
+            }
+
+            visibilityObserver.unobserve(message);
+        }
+    });
+
+    function observeMessage(message) {
+        if (!message.id.startsWith("message-") || observedMessages.has(message.id)) {
+            return;
+        }
+
+        observedMessages.add(message.id);
+
+        if (message.dataset.username !== currentUsername) {
+            visibilityObserver.observe(message);
+        }
+    }
+
+    function scanMessages(node) {
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return;
+        }
+
+        if (node.matches("p[id^='message-']")) {
+            observeMessage(node);
+        }
+
+        node.querySelectorAll("p[id^='message-']").forEach(observeMessage);
+    }
+
+    const messageObserver = new MutationObserver(records => {
+        for (const record of records) {
+            record.addedNodes.forEach(scanMessages);
+        }
+    });
+
+    messageObserver.observe(log, { childList: true, subtree: true });
+    log.querySelectorAll("p[id^='message-']").forEach(observeMessage);
+
+    document.body.addEventListener("htmx:wsBeforeMessage", event => {
+        const payload = event.detail.message;
+        let data;
+
+        try {
+            data = JSON.parse(payload);
+        } catch {
+            const parsed = new DOMParser().parseFromString(payload, "text/html");
+            const message = parsed.querySelector("p[id^='message-']");
+
+            if (message && message.dataset.username !== currentUsername) {
+                sendDelivery(message.id.replace("message-", ""));
+            }
+
+            return;
+        }
+
+        if (["sent", "delivered", "read"].includes(data.type)) {
+            event.preventDefault();
+            updateStatus(data);
+        }
     });
 </script>
 
-//templates
+
 {{ define "message" }}
 <div id="log" hx-swap-oob="beforeend">
-    <p>
-        <strong>{{ .Username }}</strong>: <span hx-disable> {{ .Message }}</span> <span>{{ .Time_Stamp }}</span>
+    <p id="message-{{ .MessageID }}" data-username="{{ .Username }}">
+        <strong>{{ .Username }}</strong>:
+        <span hx-disable>{{ .Message }}</span>
+        <span>{{ .Time_Stamp }}</span>
+        <span id="status-{{ .MessageID }}">Sending...</span>
     </p>
 </div>
 {{ end }}
+
 
 {{ define "messageHistory" }}
     {{ range . }}
