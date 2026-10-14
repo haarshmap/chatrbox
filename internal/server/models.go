@@ -85,7 +85,7 @@ type Event struct {
 	Username  string  `json:"username,omitempty"`
 	Content   string  `json:"content,omitempty"`
 	TimeStamp string  `json:"time_stamp,omitempty"`
-	HTML      string  `json:html`
+	HTML      string  `json:"html"`
 	Sender    *Client `json:"-"`
 }
 

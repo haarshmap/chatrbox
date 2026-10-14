@@ -185,6 +185,7 @@ func RoomHandlerPage(w http.ResponseWriter, r *http.Request) {
 		RoomCode: roomCode,
 		RoomName: room.RoomName,
 		Roles:    RoomMembers.Is_Admin,
+		Username: claims.Username,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

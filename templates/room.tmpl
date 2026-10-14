@@ -14,7 +14,7 @@
     <title> Testingg </title>
 </head>
 
-<body>
+<body data-username="{{ .Username }}">
     <h1>Room: {{ .RoomName }}</h1>
     <br>
     <p>Currently just slop i suppose</p>
@@ -24,6 +24,15 @@
     <div hx-ext="ws" ws-connect="/ws/{{ .RoomCode }}">
         <div id="log">
         </div>
+        <form id="deliveryForm" ws-send style="display:none">
+            <input type="hidden" name="type" value="delivered">
+            <input type="hidden" name="message_id" id="deliveryMessageID">
+        </form>
+
+        <form id="readForm" ws-send style="display:none">
+            <input type="hidden" name="type" value="read">
+            <input type="hidden" name="message_id" id="readMessageID">
+        </form>
         <form id="form" class="form" ws-send>
             <input type="hidden" name="type" value="message">
             <input type="submit" value="Send" class="button-primary">
@@ -173,7 +182,7 @@
         <strong>{{ .Username }}</strong>:
         <span hx-disable>{{ .Message }}</span>
         <span>{{ .Time_Stamp }}</span>
-        <span id="status-{{ .MessageID }}">Sending...</span>
+        <span id="status-{{ .MessageID }}"></span>
     </p>
 </div>
 {{ end }}
