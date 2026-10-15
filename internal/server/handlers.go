@@ -485,7 +485,7 @@ func GetMessageLogs(w http.ResponseWriter, r *http.Request) {
 
 	for row.Next() {
 		var msg Message
-		if err := row.Scan(&msg.RoomCode, &msg.Username, &msg.Message, &msg.Time_Stamp); err != nil {
+		if err := row.Scan(&msg.MessageID, &msg.RoomCode, &msg.Username, &msg.Message, &msg.Time_Stamp, &msg.ReplyToID); err != nil {
 			log.Fatalf("idk failed to scan or smtg ig", err)
 		}
 
@@ -493,6 +493,25 @@ func GetMessageLogs(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := row.Err(); err != nil {
 		log.Fatal(err)
+	}
+
+	messageByID := make(map[string]Message, len(messageList))
+
+	for _, msg := range messageList {
+		if msg.MessageID != "" {
+			messageByID[msg.MessageID] = msg
+		}
+	}
+
+	for i := range messageList {
+		if messageList[i].ReplyToID == "" {
+			continue
+		}
+
+		if original, ok := messageByID[messageList[i].ReplyToID]; ok {
+			messageList[i].ReplyUsername = original.Username
+			messageList[i].ReplyMessage = original.Message
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

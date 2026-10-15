@@ -11,8 +11,8 @@ func MessageWorker(db *sql.DB, msgChan <-chan server.Message) {
 	log.Printf("worker received channel: %p", msgChan)
 	stmt, err := db.Prepare(`
         INSERT INTO message_logs
-        (roomcode, username, message, time_stamp)
-        VALUES (?, ?, ?, ?)
+        (message_id, roomcode, username, message, time_stamp, reply_to_id)
+        VALUES (?, ?, ?, ?, ?, ?)
     `)
 	if err != nil {
 		log.Printf("failed to prepare statement: %v", err)
@@ -24,10 +24,12 @@ func MessageWorker(db *sql.DB, msgChan <-chan server.Message) {
 
 	for msg := range msgChan {
 		_, err := stmt.Exec(
+			msg.MessageID,
 			msg.RoomCode,
 			msg.Username,
 			msg.Message,
 			msg.Time_Stamp,
+			msg.ReplyToID,
 		)
 		if err != nil {
 			log.Printf("failed to insert message: %v", err)

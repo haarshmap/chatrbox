@@ -55,11 +55,12 @@ type PageData struct {
 }
 
 type Client struct {
-	Hub      *Hub
-	conn     *websocket.Conn
-	send     chan Event
-	username string
-	roomcode string
+	Hub       *Hub
+	conn      *websocket.Conn
+	send      chan Event
+	username  string
+	roomcode  string
+	ReplyToID string
 }
 
 type Hub struct {
@@ -71,11 +72,14 @@ type Hub struct {
 }
 
 type Message struct {
-	MessageID  string `json:"message_id"`
-	RoomCode   string `json:"roomid"`
-	Username   string `json:"username"`
-	Message    string `json:"message"`
-	Time_Stamp string `json:"time_stamp"`
+	MessageID     string `json:"message_id"`
+	RoomCode      string `json:"roomid"`
+	Username      string `json:"username"`
+	Message       string `json:"message"`
+	Time_Stamp    string `json:"time_stamp"`
+	ReplyToID     string `json:"reply_to_id"`
+	ReplyUsername string `json:"-"`
+	ReplyMessage  string `json:"-"`
 }
 
 type Event struct {
@@ -93,4 +97,5 @@ type ClientEvent struct {
 	Type      string `json:"type"`
 	MessageID string `json:"message_id,omitempty"`
 	Message   string `json:"message,omitempty"`
+	ReplyToID string `json:"reply_to_id"`
 }

@@ -37,7 +37,15 @@
             <input type="hidden" name="type" value="message">
             <input type="submit" value="Send" class="button-primary">
             <input type="text" name="message" id="msg" size="64" autofocus class="form-input">
+            <input type="hidden" name="reply_to_id" id="replyToID" value="">
         </form>
+
+        <div id="replyPreview" hidden>
+            <p>Replying to <strong id="replyUsername"></strong></p>
+            <p id="replyMessage"></p>
+            <button type="button" class="button-primary" id="cancelReply">Cancel reply</button>
+        </div>
+
         <br>
         <br>
         <div id="admin">
@@ -61,6 +69,12 @@
     const readForm = document.getElementById("readForm");
     const readMessageID = document.getElementById("readMessageID");
 
+    const replyToID = document.getElementById("replyToID");
+    const replyPreview = document.getElementById("replyPreview");
+    const replyUsername = document.getElementById("replyUsername");
+    const replyMessage = document.getElementById("replyMessage");
+    const cancelReply = document.getElementById("cancelReply");
+
     const observedMessages = new Set();
     const readMessages = new Set();
 
@@ -68,7 +82,35 @@
         setTimeout(() => {
             input.value = "";
             input.focus();
+
+            replyToID.value = "";
+            replyPreview.hidden = true;
+            replyUsername.textContent = "";
+            replyMessage.textContent = "";
+
         }, 0);
+    });
+
+    log.addEventListener("click", event => {
+        const button = event.target.closest(".reply-button");
+
+        if (!button) {
+            return;
+        }
+
+        replyToID.value = button.dataset.messageId;
+        replyUsername.textContent = button.dataset.username;
+        replyMessage.textContent = button.dataset.message;
+        replyPreview.hidden = false;
+
+        input.focus();
+    });
+
+    cancelReply.addEventListener("click", () => {
+        replyToID.value = "";
+        replyPreview.hidden = true;
+        replyUsername.textContent = "";
+        replyMessage.textContent = "";
     });
 
     function updateStatus(event) {
@@ -183,17 +225,37 @@
         <span hx-disable>{{ .Message }}</span>
         <span>{{ .Time_Stamp }}</span>
         <span id="status-{{ .MessageID }}"></span>
+        <button type="button" class="reply-button" data-message-id="{{ .MessageID }}" data-username="{{ .Username }}" data-message="{{ .Message }}"> Reply </button>
     </p>
 </div>
 {{ end }}
 
-
 {{ define "messageHistory" }}
     {{ range . }}
-        <div class="chat-message">
+        <div id="message-{{ .MessageID }}" data-username="{{ .Username }}">
+
+            {{ if .ReplyToID }}
+                <div class="reply-context">
+                    <small>
+                        Replying to <strong>{{ .ReplyUsername }}</strong>:
+                        {{ .ReplyMessage }}
+                    </small>
+                </div>
+            {{ end }}
+
             <strong>{{ .Username }}:</strong>
             <span class="body">{{ .Message }}</span>
             <span class="time">{{ .Time_Stamp }}</span>
+
+            <button
+                type="button"
+                class="reply-button"
+                data-message-id="{{ .MessageID }}"
+                data-username="{{ .Username }}"
+                data-message="{{ .Message }}">
+                Reply
+            </button>
+
         </div>
     {{ end }}
 {{ end }}

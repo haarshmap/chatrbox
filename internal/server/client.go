@@ -92,6 +92,7 @@ func (c *Client) ReadPump(msg chan<- Message) {
 				Username:   c.username,
 				Message:    event.Message,
 				Time_Stamp: formattedTime,
+				ReplyToID:  event.ReplyToID,
 			}
 
 			var buf bytes.Buffer
